@@ -8,7 +8,7 @@ var fieldArray = new Array();
 for (var i=0; i<10; i++) {
 	fieldArray[i] = new Array();
 	for (var j=0; j<4; j++)
-		fieldArray[i][j] = { "color": -1, "id": -1 };
+		fieldArray[i][j] = { "color": -1, "id": -1, "remove": 0 };
 }
 
 var gastroFieldTile = {"height":1,
@@ -146,6 +146,70 @@ Crafty.scene("main", function () {
 		}
 	}
 	
+	function checkBoard(color, x, y, direction, amount) {
+		// Checks the board for aligned tiles
+		// color contains the color to check to
+		// direction contains "x", "y" or "xy" depending on the direction we want to take
+		// amount contains the amount of tiles of the same color
+		// console.log("Appel", color, x, y, direction, amount);
+		if (typeof color == 'undefined') {
+			//first call of this function, we check the color in both directions
+			checkBoard(fieldArray[0][0].color, 0, 0, "x", 1);
+			// checkBoard(fieldArray[0][0].color, 0, 0, "y", 1);
+		} else {
+			// not first call, let's do actual checking
+			switch (direction) {
+				case "x":
+					if (y <= 9) {
+						if (x <= 2) {
+							if (fieldArray[y][x+1].color === color) {
+								checkBoard(color, x+1, y, "x", amount+1);
+							} else if (x <= 1) {
+								// console.log("change coul ligne", y);
+								checkBoard(fieldArray[y][x+1].color, x+1, y, "x", 1);
+							} else if (amount > 2) {
+								console.log("Trouvé !", y, amount);
+								if (y < 9) {
+									checkBoard(fieldArray[y+1][0].color, 0, y+1, "x", 1);
+								} else {
+									console.log("Fini !");
+								}
+							} else {
+								// console.log("Rien sur la ligne", y);
+								if (y < 9) {
+									checkBoard(fieldArray[y+1][0].color, 0, y+1, "x", 1);
+								} else {
+									console.log("Fini !");
+								}
+							}
+						} else if (amount > 2) {
+							// we are at the end of the line and there's at least 3 consecutives tiles
+							console.log("Trouvé !", y, amount);
+							// we test the next line
+							if (y < 9) {
+								checkBoard(fieldArray[y+1][0].color, 0, y+1, "x", 1);
+							} else {
+								console.log("Fini !");
+							}
+						} else {
+							// we are at the end of the line but no 3 consecutive tiles
+							// console.log("Rien sur la ligne", y);
+							if (y < 9) {
+								checkBoard(fieldArray[y+1][0].color, 0, y+1, "x", 1);
+							} else {
+								console.log("Fini !");
+							}
+						}
+					} else {
+						console.log("Fini !");
+					}
+					break;
+				case "y":
+					break;
+			}
+		}
+	}
+	
 	Crafty.c("tile", {
 		_colorsArray: ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"],
 		init: function () {},
@@ -255,13 +319,20 @@ Crafty.scene("main", function () {
 	
 	drawTileset(gastroFieldTile);
 	Crafty.e("pad");
+	for (var i=0; i<10; i++) {
+		fieldArray[i] = new Array();
+		for (var j=0; j<4; j++)
+			// fieldArray[i][j] = { "color": 2, "id": -1 };
+			fieldArray[i][j] = { "color": Crafty.math.randomInt(0,3), "id": -1 };
+	}
 	drawField();
+	checkBoard();
 	var gastroCounter = new Array();
 	
 	// we trigger that new event every X ms, first we drop all the tiles, then we draw the new field
-	window.setInterval(function () {dropTiles(); drawField();}, 500);
+	// window.setInterval(function () {dropTiles(); drawField();}, 500);
 	// we add a new gastro every second
-	window.setInterval(function () {fieldArray[0][Crafty.math.randomInt(0,3)].color = Crafty.math.randomInt(0,3);}, 1000);
+	// window.setInterval(function () {fieldArray[0][Crafty.math.randomInt(0,3)].color = Crafty.math.randomInt(0,3);}, 1000);
 	// fieldArray[0][Crafty.math.randomInt(0,3)].color = Crafty.math.randomInt(0,3);
 });
 
