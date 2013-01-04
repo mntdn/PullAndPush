@@ -4,12 +4,22 @@ var winWidth = 600;
 Crafty.init(winHeight, winWidth);
 Crafty.background('lightgray');
 
-var fieldArray = new Array();
+// ************************************************************************************
+// 										TODO
+//		Rendre la taille du tableau dépendante de 2 variables w et h
+// 		Ajouter les matchs par colonne
+//		Mettre une ligne "tampon" avant la ligne de game over : on voit quelle sera la dernière tuile qui sera au-dessus de tas
+// ************************************************************************************
+
+var fieldArray = new Array(); // contains the field with the tiles
 for (var i=0; i<10; i++) {
 	fieldArray[i] = new Array();
 	for (var j=0; j<4; j++)
-		fieldArray[i][j] = { "color": -1, "id": -1, "remove": 0 };
+		// each tile has a color (between 0 and 3) and an id (the id of the Crafty entity
+		fieldArray[i][j] = { "color": -1, "id": -1 };
 }
+
+var fullColumns = [0,0,0,0]; // all the columns are empty when we start
 
 var gastroFieldTile = {"height":1,
 				"width":12,
@@ -86,6 +96,18 @@ Crafty.scene("main", function () {
 			line++;
 			col=0;
 		});
+		
+		for (var i=0; i<4; i++) {
+			if (fieldArray[0][i].color !== -1) {
+				fullColumns[i]=1;
+			} else {
+				fullColumns[i]=0;
+			}
+		}
+		
+		if (fullColumns.indexOf(0) === -1)
+			console.log("GAME OVER !");
+		// console.log(fullColumns);
 	}
 	
 	function dropTiles() {
@@ -105,45 +127,31 @@ Crafty.scene("main", function () {
 		}
 	}
 	
-	function dropColumn(col) {
-		// we drop the column col (just the tiles that are on the bottom) by one tile, destroying the tile on the bottom 
+	function pullColumn(col) {
+		// we pull the column col by one tile, destroying the tile on the bottom 
 		var line = 9;
-		fieldArray[9][col].color = -1;
+		fieldArray[line][col].color = -1;
 		while (fieldArray[line-1][col].color != -1) {
 			fieldArray[line][col].color = fieldArray[line-1][col].color;
-			console.log(line, fieldArray[line][col].color);
+			// console.log(line, fieldArray[line][col].color);
 			line--;
-			if (fieldArray[line-1][col].color == -1)
-				fieldArray[line][col].color = -1;
-			if (line == 0)
+			if (line > 0) {
+				if (fieldArray[line-1][col].color == -1)
+					fieldArray[line][col].color = -1;
+			} else {
 				break;
+			}
 		}
 	}
 	
 	function pushColumn(column, color) {
-		// we push the column `column` whit a tile of color `color`
-		if (fieldArray[0][column].color != -1) {
-			// too much tiles already
-			console.log("Too much tiles !");
-		} else {
-			var line = 9;
-			var block = new Array();
-			while (fieldArray[line][column].color != -1) {
-				block.unshift(fieldArray[line][column].color);
-				// console.log(line, fieldArray[line][column].color);
-				line--;
-				if (line == 0)
-					break;
-			}
-			block.unshift(color);
-			console.log(block);
-			
-			line=9;
-			block.forEach(function (e) {
-				fieldArray[line][column].color = e;
-				line--;
-			});
-		}
+		// we push the column `column` with a tile of color `color`
+		var line = 9;
+		while (fieldArray[line][column].color != -1)
+			line--;
+		for (var i=line; i < 9; i++)
+			fieldArray[i][column].color = fieldArray[i+1][column].color;
+		fieldArray[9][column].color = color;
 	}
 	
 	function checkBoard(color, x, y, direction, amount) {
@@ -151,6 +159,7 @@ Crafty.scene("main", function () {
 		// color contains the color to check to
 		// direction contains "x", "y" or "xy" depending on the direction we want to take
 		// amount contains the amount of tiles of the same color
+		
 		// console.log("Appel", color, x, y, direction, amount);
 		if (typeof color == 'undefined') {
 			//first call of this function, we check the color in both directions
@@ -162,34 +171,43 @@ Crafty.scene("main", function () {
 				case "x":
 					if (y <= 9) {
 						if (x <= 2) {
-							if (fieldArray[y][x+1].color === color) {
+							if (color === -1) {
+								// if no tile, we check for the next tile
+								checkBoard(color, x+1, y, "x", 1);
+							} else if (fieldArray[y][x+1].color === color) {
 								checkBoard(color, x+1, y, "x", amount+1);
 							} else if (x <= 1) {
 								// console.log("change coul ligne", y);
 								checkBoard(fieldArray[y][x+1].color, x+1, y, "x", 1);
 							} else if (amount > 2) {
 								console.log("Trouvé !", y, amount);
+								// let's delete the tiles
+								for (var i=x; i > x-amount; i--)
+									fieldArray[y][i].color = -1;
 								if (y < 9) {
 									checkBoard(fieldArray[y+1][0].color, 0, y+1, "x", 1);
 								} else {
-									console.log("Fini !");
+									// console.log("Fini !");
 								}
 							} else {
 								// console.log("Rien sur la ligne", y);
 								if (y < 9) {
 									checkBoard(fieldArray[y+1][0].color, 0, y+1, "x", 1);
 								} else {
-									console.log("Fini !");
+									// console.log("Fini !");
 								}
 							}
 						} else if (amount > 2) {
 							// we are at the end of the line and there's at least 3 consecutives tiles
 							console.log("Trouvé !", y, amount);
+							// let's delete the tiles
+							for (var i=x; i > x-amount; i--)
+								fieldArray[y][i].color = -1;
 							// we test the next line
 							if (y < 9) {
 								checkBoard(fieldArray[y+1][0].color, 0, y+1, "x", 1);
 							} else {
-								console.log("Fini !");
+								// console.log("Fini !");
 							}
 						} else {
 							// we are at the end of the line but no 3 consecutive tiles
@@ -197,11 +215,11 @@ Crafty.scene("main", function () {
 							if (y < 9) {
 								checkBoard(fieldArray[y+1][0].color, 0, y+1, "x", 1);
 							} else {
-								console.log("Fini !");
+								// console.log("Fini !");
 							}
 						}
 					} else {
-						console.log("Fini !");
+						// console.log("Fini !");
 					}
 					break;
 				case "y":
@@ -211,7 +229,7 @@ Crafty.scene("main", function () {
 	}
 	
 	Crafty.c("tile", {
-		_colorsArray: ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"],
+		_colorsArray: ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"],
 		init: function () {},
 		tile: function (xTile, yTile, colorTile) { // colorTile is a number between 0 and 3
 			var setPosition = false; // position not set by default
@@ -289,21 +307,27 @@ Crafty.scene("main", function () {
 							var col = Math.round(this.x/96);
 							if (padLoadId != -1) {
 								// we unload the tile and empty the pad
-								pushColumn(col, Crafty(padLoadId).color);
-								drawField();
-								Crafty(padLoadId).destroy();
-								padLoadId = -1;
-								this.y -= 32;
+								if (fullColumns[col] !== 1) {
+									pushColumn(col, Crafty(padLoadId).color);
+									drawField();
+									Crafty(padLoadId).destroy();
+									padLoadId = -1;
+									this.y -= 32;
+								} else {
+									console.log("Column full!");
+								}
 								isKeyDown = true;
 							} else if (fieldArray[9][col].color != -1) {
 								// empty pad, so we load the tile
 								this.y += 32;
 								padLoadId = Crafty.e("tile")
 									.tile(this.x, this.y-32, fieldArray[9][col].color);
-								dropColumn(col);
+								pullColumn(col);
 								drawField();
 								isKeyDown = true;
 							}
+						} else if (e.key == Crafty.keys['D']) {
+							drawField();	
 						}
 					}
 				})
@@ -319,20 +343,29 @@ Crafty.scene("main", function () {
 	
 	drawTileset(gastroFieldTile);
 	Crafty.e("pad");
-	for (var i=0; i<10; i++) {
-		fieldArray[i] = new Array();
-		for (var j=0; j<4; j++)
-			// fieldArray[i][j] = { "color": 2, "id": -1 };
-			fieldArray[i][j] = { "color": Crafty.math.randomInt(0,3), "id": -1 };
-	}
+	// for (var i=0; i<10; i++) {
+		// fieldArray[i] = new Array();
+		// for (var j=0; j<4; j++)
+			// fieldArray[i][j] = { "color": Crafty.math.randomInt(-1,3), "id": -1 };
+	// }
 	drawField();
-	checkBoard();
+	
 	var gastroCounter = new Array();
 	
-	// we trigger that new event every X ms, first we drop all the tiles, then we draw the new field
-	// window.setInterval(function () {dropTiles(); drawField();}, 500);
+	// we trigger that new event every X ms, first we drop all the tiles, then we check for matching tiles, then we draw the new field
+	window.setInterval(function () {dropTiles(); checkBoard(); drawField();}, 500);
 	// we add a new gastro every second
-	// window.setInterval(function () {fieldArray[0][Crafty.math.randomInt(0,3)].color = Crafty.math.randomInt(0,3);}, 1000);
+	window.setInterval(function () {
+		if (fullColumns.indexOf(0) !== -1) {
+			// if the game is not over!
+			do {
+				var rColumn = Crafty.math.randomInt(0,3);
+				// console.log("R");
+			} while (fullColumns[rColumn] !== 0);
+			// console.log(rColumn);
+			fieldArray[0][rColumn].color = Crafty.math.randomInt(0,3);
+		}
+	}, 1000);
 	// fieldArray[0][Crafty.math.randomInt(0,3)].color = Crafty.math.randomInt(0,3);
 });
 
