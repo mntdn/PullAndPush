@@ -8,14 +8,14 @@ Crafty.background('lightgray');
 // 										TODO
 //		Rendre la taille du tableau dépendante de 2 variables w et h
 // 		Ajouter les matchs par colonne
-//		Mettre une ligne "tampon" avant la ligne de game over : on voit quelle sera la dernière tuile qui sera au-dessus de tas
+//		Mettre une ligne "tampon" avant la ligne de game over : on voit quelle sera la dernière tuile qui sera au-dessus du tas
 // ************************************************************************************
 
-var DEBUG_MODE = false;
+var DEBUG_MODE = true;
 var PAUSE_MODE = false;
 
 var fieldArray = new Array(); // contains the field with the tiles
-var fieldWidth = 5, fieldHeight = 11; // width and height of the field, in number of tiles
+var fieldWidth = 6, fieldHeight = 11; // width and height of the field, in number of tiles
 for (var i=0; i<fieldHeight; i++) {
 	fieldArray[i] = new Array();
 	for (var j=0; j<fieldWidth; j++)
@@ -28,50 +28,6 @@ var fullColumns = new Array();
 for (var j=0; j<fieldWidth; j++) // all the columns are empty when we start
 	fullColumns[j] = 0;
 
-var gastroFieldTile = {"height":1,
-				"width":12,
-				"data":[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
-				"x":0,
-				"y":(fieldHeight*32),
-				"tileheight":32,
-				"tilewidth":32,
-				"tiles":[	"sprTrayHG",
-							"sprTrayHD",
-							"sprTrayBD",
-							"sprTrayBG",
-							"sprTrayH",
-							"sprTrayD",
-							"sprTrayB",
-							"sprTrayG",
-							"sprTrayFill"
-						]		
-				};
-
-function drawTileset(data) {
-	//draws a tileset with a JSON format
-	var posData = 0;
-	for (var y = data.y; y < (data.y+(data.height * data.tileheight)); y += data.tileheight) {
-		for (var x = data.x; x < (data.x+(data.width * data.tilewidth)); x += data.tilewidth) {
-			// console.log(data.tiles[data.data[posData]-1], x, y);
-			Crafty.e("2D, Canvas, "+data.tiles[data.data[posData]-1])
-				.attr({ x: x, y: y });
-			posData++;
-		}
-	}
-}
-
-Crafty.sprite(32, "assets/tray.png", {
-										sprTrayHG:[0,0],
-										sprTrayHD:[1,0],
-										sprTrayBD:[2,0],
-										sprTrayBG:[3,0],
-										sprTrayH:[4,0],
-										sprTrayD:[5,0],
-										sprTrayB:[6,0],
-										sprTrayG:[7,0],
-										sprTrayFill:[8,0]
-									});
-									
 Crafty.sprite("assets/tile.png", {sprGastro:[0,0,96,32]});
 Crafty.sprite("assets/pad.png", {sprPad:[0,0,96,32]});
 
@@ -152,11 +108,32 @@ Crafty.scene("main", function () {
 						fieldArray[line][col].color = fieldArray[line-1][col].color;
 						fieldArray[line-1][col].color = -1;
 					}
-				} else {
+				} /* else {
 					// this tile is not moving
 					fieldArray[line][col].moving = 0;
+				} */
+			}
+		}
+	}
+	
+	function checkMoving() {
+		// let's check all the moving tiles
+		for (var col=0; col<fieldWidth; col++) {
+			var line = fieldHeight-1;
+			while (fieldArray[line][col].color !== -1) {
+				// the tiles don't move as long as they touch the one that touches the bottom
+				fieldArray[line][col].moving = 0;
+				if (line > 0) {
+					line--;
+				} else {
+					fieldArray[line][col].moving = 0;
+					break;
 				}
 			}
+			if (line > 0)
+				for (var i=line; i>=0; i--)
+					// every tile that is over the basic heap (the one that touches the bottom) is or will be moving
+					fieldArray[i][col].moving = 1;
 		}
 	}
 	
@@ -172,6 +149,7 @@ Crafty.scene("main", function () {
 				if (fieldArray[line-1][col].color == -1)
 					fieldArray[line][col].color = -1;
 			} else {
+				fieldArray[line][col].color = -1;
 				break;
 			}
 		}
@@ -192,6 +170,8 @@ Crafty.scene("main", function () {
 		// color contains the color to check to
 		// direction contains "x", "y" or "xy" depending on the direction we want to take
 		// amount contains the amount of tiles of the same color
+		
+		// BUG : si un match-3
 		
 		// console.log("Appel", color, x, y, direction, amount);
 		if (typeof color == 'undefined') {
@@ -262,50 +242,9 @@ Crafty.scene("main", function () {
 		_colorsArray: ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"],
 		init: function () {},
 		tile: function (xTile, yTile, colorTile) { // colorTile is a number between 0 and 3
-			var setPosition = false; // position not set by default
-			if (typeof xTile == 'undefined') {
-				var posGastroArray = Crafty.math.randomInt(0,(fieldWidth-1));
-				var xTile = posGastroArray*96;
-			} else {
-				var posGastroArray = Math.round(xTile/96);
-				setPosition = true; //we set the position, so we don't wont to update this tile movement
-			}
-			
-			if (typeof yTile == 'undefined') 
-				var yTile = 0;
-			
-			if (typeof colorTile == 'undefined')
-				var colorTile = Crafty.math.randomInt(0,3);
-
-			// this.color = colorTile;
-			// console.log("in", this[0], this.color);
-				
-			var stopMovement = false;
 			var tileId = Crafty.e("2D, Canvas, Tint, Collision, sprGastro")
 				.attr({ x: xTile, y: yTile, color: colorTile })
 				.tint(this._colorsArray[colorTile], 0.5)
-				.bind('MoveGastro', function(e) {
-					// when the event is triggered, we move the tile
-					// we do nothing when the position was manually set
-					if (!stopMovement && !setPosition) {
-						if ((yTile+32) < gastroFieldTile.y) {
-							yTile += 32;
-							this.attr({ x: this.x, y: yTile });
-							if (this.hit("sprGastro")) {
-								yTile -= 32;
-								this.attr({ x: this.x, y: yTile });
-								stopMovement = true;
-								this.moving = 0;
-								bottomArray[posGastroArray][((gastroFieldTile.y/gastroFieldTile.tileheight) - (yTile/32) - 1)] = this[0];
-							}
-						} else {
-							this.attr({ x: this.x, y: (gastroFieldTile.y - 32) });
-							stopMovement = true;
-							this.moving = 0;
-							bottomArray[posGastroArray][0] = this[0];
-						}
-					}
-				})
 			;
 			return tileId[0];
 		}
@@ -316,7 +255,7 @@ Crafty.scene("main", function () {
 			var isKeyDown = false;
 			var padLoadId = -1; // the ID of the tile on our pad
 			Crafty.e("2D, Canvas, sprPad")
-				.attr({ x:0, y:(gastroFieldTile.y + gastroFieldTile.tileheight) })
+				.attr({ x:0, y:((fieldHeight*32) + 4) })
 				.bind('KeyDown', function(e) {
 					if (!isKeyDown) {
 						if(e.key == Crafty.keys['LEFT_ARROW']) {
@@ -348,7 +287,6 @@ Crafty.scene("main", function () {
 								} else {
 									console.log("Column full!");
 								}
-								isKeyDown = true;
 							} else if (fieldArray[(fieldHeight-1)][col].color != -1) {
 								// empty pad, so we load the tile
 								this.y += 32;
@@ -356,8 +294,8 @@ Crafty.scene("main", function () {
 									.tile(this.x, this.y-32, fieldArray[(fieldHeight-1)][col].color);
 								pullColumn(col);
 								drawField();
-								isKeyDown = true;
 							}
+							isKeyDown = true;
 						} else if (DEBUG_MODE === true && (e.key == Crafty.keys['S'])) {
 							if (!PAUSE_MODE) {
 								window.clearInterval(moveTilesId);
@@ -380,11 +318,16 @@ Crafty.scene("main", function () {
 		}
 	});
 	
-	// let's create a new event
-	Crafty.addEvent(this, window.document, "MoveGastro", null);
-	
-	drawTileset(gastroFieldTile);
+	Crafty.e("2D, DOM, Color")
+		.attr({x: 0, y: 32, w: (fieldWidth*96), h: 2 })
+		.color("white");
+		
+	Crafty.e("2D, DOM, Color")
+		.attr({x: 0, y: (fieldHeight*32), w: (fieldWidth*96), h: 4 })
+		.color("black");
 	Crafty.e("pad");
+	
+	
 	/* for (var i=0; i<fieldHeight; i++) {
 		fieldArray[i] = new Array();
 		for (var j=0; j<fieldWidth; j++)
@@ -393,8 +336,6 @@ Crafty.scene("main", function () {
 	}
 	drawField();
 	checkBoard(); */
-	
-	var gastroCounter = new Array();
 	
 	var no_play = 0;
 	var moveTilesId = 0, addTilesId = 0;
@@ -416,6 +357,7 @@ Crafty.scene("main", function () {
 		// we trigger that new event every X ms, first we drop all the tiles, then we check for matching tiles, then we draw the new field
 		moveTilesId = window.setInterval(function () {
 			drawField();
+			checkMoving();
 			checkBoard();
 			drawField();
 			dropTiles();
