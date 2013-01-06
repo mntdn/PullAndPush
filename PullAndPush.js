@@ -6,12 +6,10 @@ Crafty.background('lightgray');
 
 // ************************************************************************************
 // 										TODO
-//		Rendre la taille du tableau dépendante de 2 variables w et h
-// 		Ajouter les matchs par colonne
 //		Mettre une ligne "tampon" avant la ligne de game over : on voit quelle sera la dernière tuile qui sera au-dessus du tas
 // ************************************************************************************
 
-var DEBUG_MODE = true;
+var DEBUG_MODE = false;
 var PAUSE_MODE = false;
 
 var fieldArray = new Array(); // contains the field with the tiles
@@ -171,26 +169,26 @@ Crafty.scene("main", function () {
 		// direction contains "x", "y" or "xy" depending on the direction we want to take
 		// amount contains the amount of tiles of the same color
 		
-		// BUG : si un match-3
+		// BUG : si un match-3 avec un moving 1 0 0 0 1 ça ne détecte pas apparemment
 		
 		// console.log("Appel", color, x, y, direction, amount);
 		if (typeof color == 'undefined') {
 			//first call of this function, we check the color in both directions
 			checkBoard(fieldArray[0][0].color, 0, 0, "x", 1);
-			// checkBoard(fieldArray[0][0].color, 0, 0, "y", 1);
+			checkBoard(fieldArray[0][0].color, 0, 0, "y", 1);
 		} else {
 			// not first call, let's do actual checking
 			switch (direction) {
 				case "x":
 					if (y <= (fieldHeight-1)) {
 						if (x < (fieldWidth-1)) {
-							if ((color === -1) || (fieldArray[y][x+1].moving === 1)) {
+							if ((color === -1) || (fieldArray[y][x].moving === 1)) {
 								// if no tile or moving tile, we check for the next tile
 								checkBoard(fieldArray[y][x+1].color, x+1, y, "x", 1);
 							} else if (fieldArray[y][x+1].color === color) {
 								checkBoard(color, x+1, y, "x", amount+1);
 							} else if (amount > 2) {
-								console.log("Trouvé !", y, amount);
+								console.log("Trouvé horiz !", y, amount);
 								// let's delete the tiles
 								for (var i=x; i > x-amount; i--)
 									fieldArray[y][i].color = -1;
@@ -216,7 +214,7 @@ Crafty.scene("main", function () {
 							}
 						} else {
 							if (amount > 2) {
-								console.log("Trouvé !", y, amount);
+								console.log("Trouvé horiz !", y, amount);
 								// let's delete the tiles
 								for (var i=x; i > x-amount; i--)
 									fieldArray[y][i].color = -1;
@@ -233,6 +231,55 @@ Crafty.scene("main", function () {
 					}
 					break;
 				case "y":
+					if (x <= (fieldWidth-1)) {
+						if (y < (fieldHeight-1)) {
+							if ((color === -1) || (fieldArray[y][x].moving === 1)) {
+								// if no tile or moving tile, we check for the next tile
+								checkBoard(fieldArray[y+1][x].color, x, y+1, "y", 1);
+							} else if (fieldArray[y+1][x].color === color) {
+								checkBoard(color, x, y+1, "y", amount+1);
+							} else if (amount > 2) {
+								console.log("Trouvé vert !", x, amount);
+								// let's delete the tiles
+								for (var i=y; i > y-amount; i--)
+									fieldArray[i][x].color = -1;
+								if (y < (fieldHeight-3)) {
+									checkBoard(fieldArray[y+1][x].color, x, y+1, "y", 1);
+								} else {
+									// we test the next column
+									if (x < (fieldWidth-1)) {
+										checkBoard(fieldArray[0][x+1].color, x+1, 0, "y", 1);
+									} else {
+										// console.log("Fini !");
+									}
+								}
+							} else if (y < (fieldHeight-3)) {
+								checkBoard(fieldArray[y+1][x].color, x, y+1, "y", 1);
+							} else {
+								// we test the next column
+									if (x < (fieldWidth-1)) {
+										checkBoard(fieldArray[0][x+1].color, x+1, 0, "y", 1);
+								} else {
+									// console.log("Fini !");
+								}
+							}
+						} else {
+							if (amount > 2) {
+								console.log("Trouvé vert !", x, amount);
+								// let's delete the tiles
+								for (var i=y; i > y-amount; i--)
+									fieldArray[i][x].color = -1;
+							}
+							// we test the next line
+							if (x < (fieldWidth-1)) {
+								checkBoard(fieldArray[0][x+1].color, x+1, 0, "y", 1);
+							} else {
+								// console.log("Fini !");
+							}
+						}
+					} else {
+						// console.log("Fini !");
+					}
 					break;
 			}
 		}
