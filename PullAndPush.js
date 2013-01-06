@@ -5,10 +5,11 @@ Crafty.init(winWidth,winHeight);
 Crafty.background('lightgrey');
 
 // ************************************************************************************
+//
 // 										TODO
 //		Mettre une ligne "tampon" avant la ligne de game over : on voit quelle sera la dernière tuile qui sera au-dessus du tas
 //		Afficher le gain de score en gros sur l'écran de façon temporaire
-//		Faire clignoter les tuiles avant de les faire disparaître
+//
 // ************************************************************************************
 
 var DEBUG_MODE = false;
@@ -402,40 +403,31 @@ Crafty.scene("main", function () {
 							}
 							isKeyDown = true;
 						} else if (e.key == Crafty.keys['J']) {
-							var col = Math.round(this.x/tileWidth);
-							if (padLoadId != -1) {
-								// we unload the tile and empty the pad
-								if (fullColumns[col] !== 1) {
-									pushColumn(col, Crafty(padLoadId).color);
+							if (!PAUSE_MODE) {
+								var col = Math.round(this.x/tileWidth);
+								if (padLoadId != -1) {
+									// we unload the tile and empty the pad
+									if (fullColumns[col] !== 1) {
+										pushColumn(col, Crafty(padLoadId).color);
+										drawField();
+										Crafty(padLoadId).destroy();
+										padLoadId = -1;
+										this.y -= tileHeight;
+									} else {
+										console.log("Column full!");
+									}
+								} else if (fieldArray[(fieldHeight-1)][col].color != -1) {
+									// empty pad, so we load the tile
+									this.y += tileHeight;
+									padLoadId = Crafty.e("tile")
+										.tile(this.x, this.y-tileHeight, fieldArray[(fieldHeight-1)][col].color);
+									pullColumn(col);
 									drawField();
-									Crafty(padLoadId).destroy();
-									padLoadId = -1;
-									this.y -= tileHeight;
-								} else {
-									console.log("Column full!");
 								}
-							} else if (fieldArray[(fieldHeight-1)][col].color != -1) {
-								// empty pad, so we load the tile
-								this.y += tileHeight;
-								padLoadId = Crafty.e("tile")
-									.tile(this.x, this.y-tileHeight, fieldArray[(fieldHeight-1)][col].color);
-								pullColumn(col);
-								drawField();
 							}
 							isKeyDown = true;
 						} else if (e.key == Crafty.keys['S']) {
-							/* if (!PAUSE_MODE) {
-								window.clearInterval(moveTilesId);
-								window.clearInterval(addTilesId);
-								console.log("PAUSE");
-								PAUSE_MODE = true;
-							} else {
-								gameLoop();
-								console.log("PLAY");
-								PAUSE_MODE = false;
-							} */
 							PAUSE_MODE = !PAUSE_MODE;
-							blinkMatches();
 							isKeyDown = true;
 						}
 					}
