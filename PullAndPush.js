@@ -7,6 +7,8 @@ Crafty.background('lightgrey');
 // ************************************************************************************
 // 										TODO
 //		Mettre une ligne "tampon" avant la ligne de game over : on voit quelle sera la dernière tuile qui sera au-dessus du tas
+//		Afficher le gain de score en gros sur l'écran de façon temporaire
+//		Faire clignoter les tuiles avant de les faire disparaître
 // ************************************************************************************
 
 var DEBUG_MODE = false;
@@ -110,8 +112,8 @@ Crafty.scene("main", function () {
 			fieldArray.forEach(function (e) {
 				e.forEach(function (f) {
 					Crafty.e("2D, DOM, Text")
-						.attr({ x:(col*tileWidth)+10, y:(line*tileHeight)+10, w:85 })
-						.textFont({ family: 'Arial', size: '12px' })
+						.attr({ x:(col*tileWidth)+1, y:(line*tileHeight)+10, w:85 })
+						.textFont({ family: 'Arial', size: '11px' })
 						.text(f.id+"|"+f.color+"|"+f.moving);
 					col++;
 				});
@@ -226,7 +228,7 @@ Crafty.scene("main", function () {
 								updateScore(10*amount);
 								// let's delete the tiles
 								for (var i=x; i > x-amount; i--)
-									fieldArray[y][i].color = -1;
+									fieldArray[y][i].color = -2;
 								if (x < (fieldWidth-3)) {
 									checkBoard(fieldArray[y][x+1].color, x+1, y, "x", 1);
 								} else {
@@ -253,7 +255,7 @@ Crafty.scene("main", function () {
 								updateScore(10*amount);
 								// let's delete the tiles
 								for (var i=x; i > x-amount; i--)
-									fieldArray[y][i].color = -1;
+									fieldArray[y][i].color = -2;
 							}
 							// we test the next line
 							if (y < (fieldHeight-1)) {
@@ -279,7 +281,7 @@ Crafty.scene("main", function () {
 								updateScore(10*amount);
 								// let's delete the tiles
 								for (var i=y; i > y-amount; i--)
-									fieldArray[i][x].color = -1;
+									fieldArray[i][x].color = -2;
 								if (y < (fieldHeight-3)) {
 									checkBoard(fieldArray[y+1][x].color, x, y+1, "y", 1);
 								} else {
@@ -306,7 +308,7 @@ Crafty.scene("main", function () {
 								updateScore(10*amount);
 								// let's delete the tiles
 								for (var i=y; i > y-amount; i--)
-									fieldArray[i][x].color = -1;
+									fieldArray[i][x].color = -2;
 							}
 							// we test the next line
 							if (x < (fieldWidth-1)) {
@@ -320,6 +322,46 @@ Crafty.scene("main", function () {
 					}
 					break;
 			}
+		}
+	}
+	
+	function blinkMatches() {
+		// makes the found matches blink
+		var matchesArray = new Array();
+		for (var i=0; i<fieldWidth; i++) {
+			for (var j=0; j<fieldHeight; j++)
+				if (fieldArray[j][i].color === -2) {
+					// Crafty(fieldArray[j][i].id).alpha = 0.3;
+					// fieldArray[j][i].color = -1;
+					matchesArray.push({ x: j, y:i });
+				}
+		}
+		
+		if (matchesArray.length > 0) {
+			PAUSE_MODE = true;
+			window.setTimeout(function () {
+				// we unpause in 200 milliseconds, the time for us to blink the tiles
+				PAUSE_MODE = false;
+			}, 200);
+			matchesArray.forEach(function (e) {
+				// let's do the blinking : we make the alpha lower then higher to simulate this effect
+				window.setTimeout(function () {
+					Crafty(fieldArray[e.x][e.y].id).alpha = 0.1;
+				}, 50);
+				window.setTimeout(function () {
+					Crafty(fieldArray[e.x][e.y].id).alpha = 0.8;
+				}, 100);
+				window.setTimeout(function () {
+					Crafty(fieldArray[e.x][e.y].id).alpha = 0.1;
+				}, 150);
+				window.setTimeout(function () {
+					Crafty(fieldArray[e.x][e.y].id).alpha = 0.8;
+				}, 180);
+				window.setTimeout(function () {
+					// let's not forget to clear the tile afterwards...
+					fieldArray[e.x][e.y].color = -1;
+				}, 190);
+			});
 		}
 	}
 	
@@ -381,8 +423,8 @@ Crafty.scene("main", function () {
 								drawField();
 							}
 							isKeyDown = true;
-						} else if (DEBUG_MODE === true && (e.key == Crafty.keys['S'])) {
-							if (!PAUSE_MODE) {
+						} else if (e.key == Crafty.keys['S']) {
+							/* if (!PAUSE_MODE) {
 								window.clearInterval(moveTilesId);
 								window.clearInterval(addTilesId);
 								console.log("PAUSE");
@@ -391,7 +433,9 @@ Crafty.scene("main", function () {
 								gameLoop();
 								console.log("PLAY");
 								PAUSE_MODE = false;
-							}
+							} */
+							PAUSE_MODE = !PAUSE_MODE;
+							blinkMatches();
 							isKeyDown = true;
 						}
 					}
@@ -425,7 +469,8 @@ Crafty.scene("main", function () {
 			// fieldArray[i][j] = { "color": (j==1)?-1:1, "id": -1 };
 	}
 	drawField();
-	checkBoard(); */
+	checkBoard();
+	blinkMatches(); */
 	
 	var no_play = 0;
 	var moveTilesId = 0, addTilesId = 0;
@@ -443,24 +488,16 @@ Crafty.scene("main", function () {
 				fieldArray[0][rColumn].color = Crafty.math.randomInt(0,3);
 				fieldArray[0][rColumn].moving = 1;
 			}
-			if (fullColumns.indexOf(0) !== -1) {
-				// if the game is not over!
-				do {
-					var rColumn = Crafty.math.randomInt(0,(fieldWidth-1));
-					// console.log("R");
-				} while (fullColumns[rColumn] !== 0);
-				// console.log(rColumn);
-				fieldArray[0][rColumn].color = Crafty.math.randomInt(0,3);
-				fieldArray[0][rColumn].moving = 1;
-			}
 		}, 1000);
+		
 		// we trigger that new event every X ms, first we drop all the tiles, then we check for matching tiles, then we draw the new field
 		moveTilesId = window.setInterval(function () {
-			drawField();
-			checkMoving();
-			checkBoard();
-			drawField();
-			dropTiles();
+			// if (!PAUSE_MODE) drawField();
+			if (!PAUSE_MODE) checkMoving();
+			if (!PAUSE_MODE) checkBoard();
+			if (!PAUSE_MODE) blinkMatches();
+			if (!PAUSE_MODE) dropTiles();
+			if (!PAUSE_MODE) drawField();
 		}, 500);
 		// fieldArray[0][Crafty.math.randomInt(0,3)].color = Crafty.math.randomInt(0,3);
 	}
