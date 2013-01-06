@@ -1,8 +1,8 @@
-var winHeight = 800;
 var winWidth = 600;
+var winHeight = 450;
 
-Crafty.init(winHeight, winWidth);
-Crafty.background('lightgray');
+Crafty.init(winWidth,winHeight);
+Crafty.background('lightgrey');
 
 // ************************************************************************************
 // 										TODO
@@ -12,25 +12,38 @@ Crafty.background('lightgray');
 var DEBUG_MODE = false;
 var PAUSE_MODE = false;
 
-var fieldArray = new Array(); // contains the field with the tiles
-var fieldWidth = 6, fieldHeight = 11; // width and height of the field, in number of tiles
-for (var i=0; i<fieldHeight; i++) {
-	fieldArray[i] = new Array();
-	for (var j=0; j<fieldWidth; j++)
-		// each tile has a color (between 0 and 3), an id (the id of the Crafty entity),
-		// and a prorpiety indicating if the tile is moving or not (not moving = touching another tile)
-		fieldArray[i][j] = { "color": -1, "id": -1, "moving": 1 };
-}
-
-var fullColumns = new Array(); 
-for (var j=0; j<fieldWidth; j++) // all the columns are empty when we start
-	fullColumns[j] = 0;
-
-Crafty.sprite("assets/tile.png", {sprGastro:[0,0,96,32]});
-Crafty.sprite("assets/pad.png", {sprPad:[0,0,96,32]});
+Crafty.scene("menu", function () {
+	Crafty.sprite("assets/tile.png", {sprTile:[0,0,96,32]});
+	
+	Crafty.e("2D, DOM, Mouse, Text, sprTile")
+		.attr({ x: 50, y: 50 })
+		.text("Jouer")
+		.bind("Click", function (e) {
+			Crafty.scene("main");
+		})
+	;
+});
 
 Crafty.scene("main", function () {
 
+	var fieldArray = new Array(); // contains the field with the tiles
+	var fieldWidth = 6, fieldHeight = 12; // width and height of the field, in number of tiles
+	for (var i=0; i<fieldHeight; i++) {
+		fieldArray[i] = new Array();
+		for (var j=0; j<fieldWidth; j++)
+			// each tile has a color (between 0 and 3), an id (the id of the Crafty entity),
+			// and a prorpiety indicating if the tile is moving or not (not moving = touching another tile)
+			fieldArray[i][j] = { "color": -1, "id": -1, "moving": 1 };
+	}
+
+	var fullColumns = new Array(); 
+	for (var j=0; j<fieldWidth; j++) // all the columns are empty when we start
+		fullColumns[j] = 0;
+
+	var tileWidth = 52, tileHeight = 32;
+	Crafty.sprite("assets/tile.png", {sprTile:[0,0,tileWidth,tileHeight]});
+	Crafty.sprite("assets/pad.png", {sprPad:[0,0,tileWidth,tileHeight]});
+	
 	function drawField() {
 		// we redraw all the tiles if they have changed
 		var line = 0, col = 0;
@@ -42,12 +55,12 @@ Crafty.scene("main", function () {
 							// console.log(f.id, Crafty(f.id).color, f.color);
 							Crafty(f.id).destroy();
 							f.id = Crafty.e("tile")
-								.tile(col*96, line*32, f.color);
+								.tile(col*tileWidth, line*tileHeight, f.color);
 							f.moving = 1;
 						}
 					} else {
 						f.id = Crafty.e("tile")
-							.tile(col*96, line*32, f.color);
+							.tile(col*tileWidth, line*tileHeight, f.color);
 					}
 				} else if (f.id != -1) {
 					// if there was a tile let's destroy it
@@ -73,8 +86,22 @@ Crafty.scene("main", function () {
 			}
 		}
 		
-		if (fullColumns.indexOf(0) === -1)
+		if (fullColumns.indexOf(0) === -1) {
 			console.log("GAME OVER !");
+			window.clearInterval(moveTilesId);
+			window.clearInterval(addTilesId);
+			Crafty.e("2D, Canvas, Color, Mouse")
+				.attr({ x: 50, y: 50, w: 200, h: 150 })
+				.color("white")
+				.bind("Click", function (e) {
+					Crafty.scene("main");
+				})
+			;
+			Crafty.e("2D, DOM, Text")
+				.attr({ x: 75, y: 75, w: 150 })
+				.text("GAME OVER ! Click to play again")
+			;
+		}
 		// console.log(fullColumns);
 		
 		if (DEBUG_MODE) {
@@ -83,7 +110,7 @@ Crafty.scene("main", function () {
 			fieldArray.forEach(function (e) {
 				e.forEach(function (f) {
 					Crafty.e("2D, DOM, Text")
-						.attr({ x:(col*96)+10, y:(line*32)+10, w:85 })
+						.attr({ x:(col*tileWidth)+10, y:(line*tileHeight)+10, w:85 })
 						.textFont({ family: 'Arial', size: '12px' })
 						.text(f.id+"|"+f.color+"|"+f.moving);
 					col++;
@@ -163,6 +190,13 @@ Crafty.scene("main", function () {
 		fieldArray[(fieldHeight-1)][column].color = color;
 	}
 	
+	function updateScore(toAdd) {
+		// updates the current score by toAdd
+		var s = scoreText.text();
+		scoreText.text(s+toAdd);
+		console.log("Won",toAdd,"points");
+	}
+	
 	function checkBoard(color, x, y, direction, amount) {
 		// Checks the board for aligned tiles
 		// color contains the color to check to
@@ -189,6 +223,7 @@ Crafty.scene("main", function () {
 								checkBoard(color, x+1, y, "x", amount+1);
 							} else if (amount > 2) {
 								console.log("Trouvé horiz !", y, amount);
+								updateScore(10*amount);
 								// let's delete the tiles
 								for (var i=x; i > x-amount; i--)
 									fieldArray[y][i].color = -1;
@@ -215,6 +250,7 @@ Crafty.scene("main", function () {
 						} else {
 							if (amount > 2) {
 								console.log("Trouvé horiz !", y, amount);
+								updateScore(10*amount);
 								// let's delete the tiles
 								for (var i=x; i > x-amount; i--)
 									fieldArray[y][i].color = -1;
@@ -240,6 +276,7 @@ Crafty.scene("main", function () {
 								checkBoard(color, x, y+1, "y", amount+1);
 							} else if (amount > 2) {
 								console.log("Trouvé vert !", x, amount);
+								updateScore(10*amount);
 								// let's delete the tiles
 								for (var i=y; i > y-amount; i--)
 									fieldArray[i][x].color = -1;
@@ -266,6 +303,7 @@ Crafty.scene("main", function () {
 						} else {
 							if (amount > 2) {
 								console.log("Trouvé vert !", x, amount);
+								updateScore(10*amount);
 								// let's delete the tiles
 								for (var i=y; i > y-amount; i--)
 									fieldArray[i][x].color = -1;
@@ -289,7 +327,7 @@ Crafty.scene("main", function () {
 		_colorsArray: ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"],
 		init: function () {},
 		tile: function (xTile, yTile, colorTile) { // colorTile is a number between 0 and 3
-			var tileId = Crafty.e("2D, Canvas, Tint, Collision, sprGastro")
+			var tileId = Crafty.e("2D, Canvas, Tint, Collision, sprTile")
 				.attr({ x: xTile, y: yTile, color: colorTile })
 				.tint(this._colorsArray[colorTile], 0.5)
 			;
@@ -302,27 +340,27 @@ Crafty.scene("main", function () {
 			var isKeyDown = false;
 			var padLoadId = -1; // the ID of the tile on our pad
 			Crafty.e("2D, Canvas, sprPad")
-				.attr({ x:0, y:((fieldHeight*32) + 4) })
+				.attr({ x:0, y:((fieldHeight*tileHeight) + 4) })
 				.bind('KeyDown', function(e) {
 					if (!isKeyDown) {
 						if(e.key == Crafty.keys['LEFT_ARROW']) {
-							if (this.x - 96 >= 0) {
-								this.x -= 96;
+							if (this.x - tileWidth >= 0) {
+								this.x -= tileWidth;
 								if (padLoadId != -1)
 									Crafty(padLoadId).
-										attr({x:this.x, y:(this.y-32) });
+										attr({x:this.x, y:(this.y-tileHeight) });
 							}
 							isKeyDown = true;
 						} else if (e.key == Crafty.keys['RIGHT_ARROW']) {
-							if (this.x + 96 <= (96*(fieldWidth-1))) {
-								this.x += 96;
+							if (this.x + tileWidth <= (tileWidth*(fieldWidth-1))) {
+								this.x += tileWidth;
 								if (padLoadId != -1)
 									Crafty(padLoadId).
-										attr({x:this.x, y:(this.y-32) });
+										attr({x:this.x, y:(this.y-tileHeight) });
 							}
 							isKeyDown = true;
 						} else if (e.key == Crafty.keys['J']) {
-							var col = Math.round(this.x/96);
+							var col = Math.round(this.x/tileWidth);
 							if (padLoadId != -1) {
 								// we unload the tile and empty the pad
 								if (fullColumns[col] !== 1) {
@@ -330,15 +368,15 @@ Crafty.scene("main", function () {
 									drawField();
 									Crafty(padLoadId).destroy();
 									padLoadId = -1;
-									this.y -= 32;
+									this.y -= tileHeight;
 								} else {
 									console.log("Column full!");
 								}
 							} else if (fieldArray[(fieldHeight-1)][col].color != -1) {
 								// empty pad, so we load the tile
-								this.y += 32;
+								this.y += tileHeight;
 								padLoadId = Crafty.e("tile")
-									.tile(this.x, this.y-32, fieldArray[(fieldHeight-1)][col].color);
+									.tile(this.x, this.y-tileHeight, fieldArray[(fieldHeight-1)][col].color);
 								pullColumn(col);
 								drawField();
 							}
@@ -366,14 +404,19 @@ Crafty.scene("main", function () {
 	});
 	
 	Crafty.e("2D, DOM, Color")
-		.attr({x: 0, y: 32, w: (fieldWidth*96), h: 2 })
-		.color("white");
+		.attr({x: 0, y: tileHeight, w: (fieldWidth*tileWidth), h: 2 })
+		.color("gray");
 		
 	Crafty.e("2D, DOM, Color")
-		.attr({x: 0, y: (fieldHeight*32), w: (fieldWidth*96), h: 4 })
+		.attr({x: 0, y: (fieldHeight*tileHeight), w: (fieldWidth*tileWidth), h: 4 })
 		.color("black");
 	Crafty.e("pad");
 	
+	var scoreTotal = 0;
+	var scoreText = Crafty.e("2D, DOM, Text")
+						.attr({ x:450, y:32 })
+						.text(scoreTotal)
+					;
 	
 	/* for (var i=0; i<fieldHeight; i++) {
 		fieldArray[i] = new Array();
@@ -390,6 +433,16 @@ Crafty.scene("main", function () {
 	function gameLoop () {
 		// we add a new gastro every second
 		addTilesId = window.setInterval(function () {
+			if (fullColumns.indexOf(0) !== -1) {
+				// if the game is not over!
+				do {
+					var rColumn = Crafty.math.randomInt(0,(fieldWidth-1));
+					// console.log("R");
+				} while (fullColumns[rColumn] !== 0);
+				// console.log(rColumn);
+				fieldArray[0][rColumn].color = Crafty.math.randomInt(0,3);
+				fieldArray[0][rColumn].moving = 1;
+			}
 			if (fullColumns.indexOf(0) !== -1) {
 				// if the game is not over!
 				do {
@@ -417,4 +470,21 @@ Crafty.scene("main", function () {
 	}
 });
 
-Crafty.scene("main");
+Crafty.load([
+		"assets/tile.png", 
+		"assets/pad.png"
+	],
+	function() {
+		//when loaded
+		Crafty.scene("menu"); //go to the menu
+	},
+
+	function(e) {
+		//progress
+		console.log(e.loaded, e.total, e.percent ,e.src);
+	},
+
+	function(e) {
+		//uh oh, error loading
+	}
+);
