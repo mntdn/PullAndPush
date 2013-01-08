@@ -7,12 +7,10 @@ Crafty.background('lightgrey');
 // ************************************************************************************
 //
 // 										TODO
-//		Mettre une ligne "tampon" avant la ligne de game over : on voit quelle sera la dernière tuile qui sera au-dessus du tas
+//		Mettre à jour le score de façon progressive, pour bien montrer qu'on gagne des points (10 par 10 toutes les 20ms par exemple)
 //
 // ************************************************************************************
 
-var DEBUG_MODE = false;
-var PAUSE_MODE = false;
 
 Crafty.scene("menu", function () {
 
@@ -27,8 +25,11 @@ Crafty.scene("menu", function () {
 
 Crafty.scene("main", function () {
 
+	var DEBUG_MODE = false;
+	var PAUSE_MODE = false;
 	var fieldArray = new Array(); // contains the field with the tiles
 	var fieldWidth = 6, fieldHeight = 12; // width and height of the field, in number of tiles
+	var offsetTop = 10, offsetLeft = 10; // how many pixels away from the left and top borders of the scene
 	for (var i=0; i<fieldHeight; i++) {
 		fieldArray[i] = new Array();
 		for (var j=0; j<fieldWidth; j++)
@@ -42,6 +43,14 @@ Crafty.scene("main", function () {
 		fullColumns[j] = 0;
 
 	var colorsArray = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"];
+	
+	var currentLevel = 1;
+	var currentScore = 0;
+	// var levelCaps = [500, 1500, 3000, 10000, 30000, 60000, 100000]; // how many points to go to next level
+	var levelCaps = [60, 150, 300, 500, 600, 700, 800, 900]; // how many points to go to next level
+	var intervalBetweenUpdates = 1000; // the number of ms between each update of the scene
+	var newLevelUpdateIntervalDecrease = 100; // each level, we decrease the interval between updates by this nummber of ms
+	var numberOfColors = 3; // the number of authorized colors, max is colorsArray.length
 
 	var tileWidth = 52, tileHeight = 32;
 	Crafty.sprite("assets/tile.png", {sprTile:[0,0,tileWidth,tileHeight]});
@@ -62,12 +71,12 @@ Crafty.scene("main", function () {
 							// console.log(f.id, Crafty(f.id).color, f.color);
 							Crafty(f.id).destroy();
 							f.id = Crafty.e("tile")
-								.tile(col*tileWidth, line*tileHeight, f.color);
+								.tile(col*tileWidth+offsetLeft, line*tileHeight+offsetTop, f.color);
 							f.moving = 1;
 						}
 					} else {
 						f.id = Crafty.e("tile")
-							.tile(col*tileWidth, line*tileHeight, f.color);
+							.tile(col*tileWidth+offsetLeft, line*tileHeight+offsetTop, f.color);
 					}
 				} else if (f.id != -1) {
 					// if there was a tile let's destroy it
@@ -95,8 +104,9 @@ Crafty.scene("main", function () {
 		
 		if (fullColumns.indexOf(0) === -1) {
 			console.log("GAME OVER !");
-			window.clearInterval(moveTilesId);
-			window.clearInterval(addTilesId);
+			PAUSE_MODE = true;
+			// window.clearInterval(moveTilesId);
+			// window.clearInterval(addTilesId);
 			Crafty.e("2D, Canvas, Color, Mouse")
 				.attr({ x: 50, y: 50, w: 200, h: 150 })
 				.color("white")
@@ -117,7 +127,7 @@ Crafty.scene("main", function () {
 			fieldArray.forEach(function (e) {
 				e.forEach(function (f) {
 					Crafty.e("2D, DOM, Text")
-						.attr({ x:(col*tileWidth)+1, y:(line*tileHeight)+10, w:85 })
+						.attr({ x:(col*tileWidth)+1+offsetLeft, y:(line*tileHeight)+10+offsetTop, w:85 })
 						.textFont({ family: 'Arial', size: '11px' })
 						.text(f.id+"|"+f.color+"|"+f.moving);
 					col++;
@@ -196,9 +206,16 @@ Crafty.scene("main", function () {
 	
 	function updateScore(toAdd, pos) {
 		// updates the current score by toAdd
-		// pos is an {x, y} object
-		var s = scoreText.text();
-		scoreText.text(s+(toAdd*comboCounter));
+		// pos is an {x, y} object indicating where the score animation should take place
+		// var s = scoreText.text();
+		// for (var i = 10; i <= toAdd; i+=10) {
+			// var t = s+(i*comboCounter)
+			// window.setTimeout(function () {
+				// scoreText.text(t);
+			// }, i*20);
+		// }
+		currentScore += (toAdd*comboCounter);
+		scoreText.text(currentScore);
 		// console.log(pos);
 		// a litte animation to show the score gained
 		var nbSteps = 50;
@@ -493,17 +510,17 @@ Crafty.scene("main", function () {
 		init: function () {
 			var padLoadId = -1; // the ID of the tile on our pad
 			Crafty.e("2D, Canvas, sprPad")
-				.attr({ x:0, y:((fieldHeight*tileHeight) + 4) })
+				.attr({ x:0+offsetLeft, y:((fieldHeight*tileHeight) + 4 + offsetTop) })
 				.bind('KeyDown', function(e) {
 					if(e.key == Crafty.keys['LEFT_ARROW']) {
-						if (this.x - tileWidth >= 0) {
+						if (this.x - tileWidth >= offsetLeft) {
 							this.x -= tileWidth;
 							if (padLoadId != -1)
 								Crafty(padLoadId).
 									attr({x:this.x, y:(this.y-tileHeight) });
 						}
 					} else if (e.key == Crafty.keys['RIGHT_ARROW']) {
-						if (this.x + tileWidth <= (tileWidth*(fieldWidth-1))) {
+						if (this.x + tileWidth <= (tileWidth*(fieldWidth-1)+offsetLeft)) {
 							this.x += tileWidth;
 							if (padLoadId != -1)
 								Crafty(padLoadId).
@@ -540,19 +557,29 @@ Crafty.scene("main", function () {
 		}
 	});
 	
-	Crafty.e("2D, DOM, Color")
-		.attr({x: 0, y: tileHeight, w: (fieldWidth*tileWidth), h: 2 })
-		.color("gray");
+	// Crafty.e("2D, DOM, Color")
+		// .attr({x: 0+offsetLeft, y: tileHeight+offsetTop, w: (fieldWidth*tileWidth), h: 2 })
+		// .color("gray");
 		
 	Crafty.e("2D, DOM, Color")
-		.attr({x: 0, y: (fieldHeight*tileHeight), w: (fieldWidth*tileWidth), h: 4 })
+		.attr({x: 0+offsetLeft, y: (fieldHeight*tileHeight)+offsetTop, w: (fieldWidth*tileWidth), h: 4 })
 		.color("black");
 	Crafty.e("pad");
 	
-	var scoreTotal = 0;
+	Crafty.e("2D, DOM, Text")
+		.attr({ x:450, y:32 })
+		.css({
+			'font-size':'20px', 
+			'font-weight':'bold', 
+			'font-family':'Arial, sans-serif', 
+			'color': '#000',
+			// '-webkit-text-stroke': '1px white',
+			'text-shadow': '-2px 2px 2px #fff'
+		})
+		.text("Score")
+	;
 	var scoreText = Crafty.e("2D, DOM, Text")
-						.attr({ x:450, y:32 })
-						// .css({'font-size':'16px', 'font-weight': 'bold', 'font-family':'Arial sans-serif', 'color': '#190adb' })
+						.attr({ x:450, y:50 })
 						.css({
 							'font-size':'20px', 
 							'font-weight':'bold', 
@@ -561,7 +588,32 @@ Crafty.scene("main", function () {
 							// '-webkit-text-stroke': '1px white',
 							'text-shadow': '-2px 2px 2px #fff'
 						})
-						.text(scoreTotal)
+						.text(currentScore)
+					;
+					
+	Crafty.e("2D, DOM, Text")
+		.attr({ x:450, y:92 })
+		.css({
+			'font-size':'20px', 
+			'font-weight':'bold', 
+			'font-family':'Arial, sans-serif', 
+			'color': '#000',
+			// '-webkit-text-stroke': '1px white',
+			'text-shadow': '-2px 2px 2px #fff'
+		})
+		.text("Level")
+	;
+	var levelText = Crafty.e("2D, DOM, Text")
+						.attr({ x:450, y:112 })
+						.css({
+							'font-size':'20px', 
+							'font-weight':'bold', 
+							'font-family':'Arial, sans-serif', 
+							'color': '#190adb',
+							// '-webkit-text-stroke': '1px white',
+							'text-shadow': '-2px 2px 2px #fff'
+						})
+						.text(currentLevel)
 					;
 	
 	/* for (var i=0; i<fieldHeight; i++) {
@@ -578,45 +630,68 @@ Crafty.scene("main", function () {
 	
 	var no_play = 0;
 	var moveTilesId = 0, addTilesId = 0;
+	var tick = 1;
 	
 	function gameLoop () {
-		// we add a new gastro every second
-		addTilesId = window.setInterval(function () {
-			var authorizedColumns = new Array();
-			for (var i=0; i<fullColumns.length; i++) 
-				if (fullColumns[i] == 0) authorizedColumns.push(i);
-			
-			if (authorizedColumns.length > 0) {
-				// if the game is not over!
-				var rColumn = Crafty.math.randomElementOfArray(authorizedColumns);
-				fieldArray[0][rColumn].color = Crafty.math.randomInt(0,colorsArray.length-1);
-				fieldArray[0][rColumn].moving = 1;
-				if (authorizedColumns.length > 1) {
-					do {
-						var rColumn2 = Crafty.math.randomElementOfArray(authorizedColumns);
-					} while (rColumn2 === rColumn);
-					fieldArray[0][rColumn2].color = Crafty.math.randomInt(0,colorsArray.length-1);
-					fieldArray[0][rColumn2].moving = 1;
-					// console.log(authorizedColumns, rColumn, rColumn2);
+		moveTilesId = window.setInterval(function () {
+			if (!PAUSE_MODE) {
+				// we add two tiles every 3 ticks
+				if (tick++ >= 3) {
+					var authorizedColumns = new Array();
+					for (var i=0; i<fullColumns.length; i++) 
+						if (fullColumns[i] == 0) authorizedColumns.push(i);
+					
+					if (authorizedColumns.length > 0) {
+						// if the game is not over!
+						var rColumn = Crafty.math.randomElementOfArray(authorizedColumns);
+						fieldArray[0][rColumn].color = Crafty.math.randomInt(0,numberOfColors-1);
+						fieldArray[0][rColumn].moving = 1;
+						if (authorizedColumns.length > 1) {
+							do {
+								var rColumn2 = Crafty.math.randomElementOfArray(authorizedColumns);
+							} while (rColumn2 === rColumn);
+							fieldArray[0][rColumn2].color = Crafty.math.randomInt(0,numberOfColors-1);
+							fieldArray[0][rColumn2].moving = 1;
+							// console.log(authorizedColumns, rColumn, rColumn2);
+						}
+					}
+					tick = 1; //reset of the counter
+				}
+				checkXEnded = false; checkYEnded = false; 
+				comboCounter = 0;
+				if (currentLevel < levelCaps.length) {
+					if (currentScore >= levelCaps[currentLevel-1]) {
+						// level change
+						currentLevel++;
+						levelText.text(currentLevel);
+						intervalBetweenUpdates -= newLevelUpdateIntervalDecrease;
+						// intervalBetweenTiles -= newLevelTilesIntervalDecrease;
+						if (numberOfColors < colorsArray.length) numberOfColors++; //we add one possible color to the mix
+						window.clearInterval(moveTilesId);
+						// window.clearInterval(addTilesId);
+						gameLoop();
+					}
 				}
 			}
-		}, 1000);
-		
-		// we trigger that new event every X ms, first we drop all the tiles, then we check for matching tiles, then we draw the new field
-		moveTilesId = window.setInterval(function () {
-			// if (!PAUSE_MODE) drawField();
-			if (!PAUSE_MODE) {checkXEnded = false; checkYEnded = false; comboCounter = 0;}
 			if (!PAUSE_MODE) checkMoving();
 			if (!PAUSE_MODE) checkBoard();
 			if (!PAUSE_MODE) blinkMatches();
-			// if (!PAUSE_MODE) comboCheck();
 			if (!PAUSE_MODE) dropTiles();
 			if (!PAUSE_MODE) drawField();
-		}, 500);
-		// fieldArray[0][Crafty.math.randomInt(0,3)].color = Crafty.math.randomInt(0,3);
+		}, intervalBetweenUpdates);
 	}
 	
 	if (!no_play) {
+		//the first time, we have to whole field for us !
+		
+		var rColumn = Crafty.math.randomInt(0, fieldWidth-1);
+		fieldArray[0][rColumn].color = Crafty.math.randomInt(0,numberOfColors-1);
+		fieldArray[0][rColumn].moving = 1;
+		do {
+			var rColumn2 = Crafty.math.randomInt(0, fieldWidth-1);
+		} while (rColumn2 === rColumn);
+		fieldArray[0][rColumn2].color = Crafty.math.randomInt(0,numberOfColors-1);
+		fieldArray[0][rColumn2].moving = 1;
 		gameLoop ();
 	}
 });
