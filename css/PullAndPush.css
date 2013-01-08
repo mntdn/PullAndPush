@@ -1,3 +1,14 @@
 body {
 	font-family: Arial, sans-serif;
 }
+
+.menuButton {
+	background-color: #900;
+	color: white;
+	border: 2px solid black;
+	padding: 5px 20px;
+}
+
+.menuButton:hover {
+	background-color: #B00;
+}

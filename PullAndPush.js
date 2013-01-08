@@ -8,7 +8,6 @@ Crafty.background('lightgrey');
 //
 // 										TODO
 //		Mettre une ligne "tampon" avant la ligne de game over : on voit quelle sera la dernière tuile qui sera au-dessus du tas
-//		Le système de combo fonctionne, mais il est compliqué d'afficher un compteur de combo... Peut-être faire quelque chose sur le côté ?
 //
 // ************************************************************************************
 
@@ -16,21 +15,13 @@ var DEBUG_MODE = false;
 var PAUSE_MODE = false;
 
 Crafty.scene("menu", function () {
-	Crafty.sprite("assets/tile.png", {sprTile:[0,0,96,32]});
-	
-	Crafty.e("2D, DOM, Mouse, Text, sprTile")
-		.attr({ x: 50, y: 50 })
-		.text("Jouer")
-		.bind("Click", function (e) {
-			Crafty.scene("main");
-		})
-	;
+
 	Crafty.e("HTML, Mouse")
-		.attr({x:200, y:20, w:100, h:100})
-		.replace("<h1>PLAY</h1>")
-		.bind("Click", function (e) {
-			Crafty.scene("main");
-		})
+		.attr({x:200, y:20, w:100, h:20})
+		.replace("<p class='menuButton' onClick='Crafty.scene(\"main\");'>play</p>")
+		// .bind("Click", function (e) {
+			// Crafty.scene("main");
+		// })
 	;
 });
 
@@ -57,6 +48,8 @@ Crafty.scene("main", function () {
 	Crafty.sprite("assets/pad.png", {sprPad:[0,0,tileWidth,tileHeight]});
 	
 	var comboCounter = 0; // Counts the number of simultaneous matches we did
+	var checkXEnded = false, checkYEnded = false; // used to know if we have finished checking for matches on X and Y
+	var comboText; // will contain the entity printing the current combo
 	
 	function drawField() {
 		// we redraw all the tiles if they have changed
@@ -147,10 +140,7 @@ Crafty.scene("main", function () {
 						fieldArray[line][col].color = fieldArray[line-1][col].color;
 						fieldArray[line-1][col].color = -1;
 					}
-				} /* else {
-					// this tile is not moving
-					fieldArray[line][col].moving = 0;
-				} */
+				}
 			}
 		}
 	}
@@ -232,35 +222,76 @@ Crafty.scene("main", function () {
 				}
 			})
 		;
+		
+		comboCheck(comboCounter); // we display combo if it is needed
 		// console.log("Won",toAdd,"points");
 	}
 	
-	function comboCheck() {
-		// console.log(comboCounter,"COMBO");
-		var nbSteps = 50;
-		Crafty.e("DOM, Text")
-			.attr({x: 50, y: ((fieldHeight*tileHeight)/2) - (comboCounter*10)})
-			.text(comboCounter+"x COMBO!")
-			.css({
-				'font-size':(comboCounter*20)+'px', 
-				'font-weight':'bold', 
-				'font-family':'Arial, sans-serif', 
-				'color': '#F00',
-				'text-align':'center',
-				'margin':'0',
-				'padding':'0',
-				'line-height':'80%',
-				'-webkit-text-stroke': '1px black',
-				'text-shadow': '-2px 2px 2px #000'
-			})
-			.bind("EnterFrame", function (e) {
-				if (nbSteps-- > 0) {
-					this.y -= 0.7;
+	function comboCheck(comboCounterLocal) {
+		if (comboCounterLocal < -1) {
+			//when combo counter < 0, it means one of the checks (X or Y) ended, e check if both ended and destroy the combo text after some ms
+			if (checkXEnded === true && checkYEnded === true)
+				window.setTimeout(function () {
+					console.log("DESTROy", comboCounterLocal);
+					comboText.destroy();
+					comboText[0] = -1;
+				}, (comboCounterLocal*-500));			
+		} else if (comboCounterLocal > 1) {
+			if (typeof comboText === 'undefined') {
+				comboText = Crafty.e("DOM, Text")
+					.attr({x: ((fieldWidth*tileWidth)/2 - (4.15 * comboCounterLocal*20)/2), y: ((fieldHeight*tileHeight)/2) - (comboCounterLocal*10), nbSteps:50, z:10})
+					.text(comboCounterLocal+"x COMBO!")
+					.css({
+						'font-size':(comboCounterLocal*20)+'px', 
+						'font-weight':'bold', 
+						'font-family':'Arial, sans-serif', 
+						'color': '#F00',
+						'text-align':'center',
+						'margin':'0',
+						'padding':'0',
+						'line-height':'80%',
+						'-webkit-text-stroke': '1px black',
+						'text-shadow': '-2px 2px 2px #000'
+					})
+					.bind("EnterFrame", function (e) {
+						if (this.nbSteps-- > 0) this.y -= 0.7;
+					})								
+				;
+			} else {
+				if (comboText[0] === -1) {
+					// if this is not our first combo, we still have to create an entity
+					comboText = Crafty.e("DOM, Text")
+						.attr({x: ((fieldWidth*tileWidth)/2 - (4.15 * comboCounterLocal*20)/2), y: ((fieldHeight*tileHeight)/2) - (comboCounterLocal*10), nbSteps:50, z:10})
+						.text(comboCounterLocal+"x COMBO!")
+						.css({
+							'font-size':(comboCounterLocal*20)+'px', 
+							'font-weight':'bold', 
+							'font-family':'Arial, sans-serif', 
+							'color': '#F00',
+							'text-align':'center',
+							'margin':'0',
+							'padding':'0',
+							'line-height':'80%',
+							'-webkit-text-stroke': '1px black',
+							'text-shadow': '-2px 2px 2px #000'
+						})
+						.bind("EnterFrame", function (e) {
+							if (this.nbSteps-- > 0) this.y -= 0.7;
+						})								
+					;
 				} else {
-					this.destroy();
+				// there's aready a combo in progress, we just update it
+					window.setTimeout(function () {
+						// console.log(comboCounterLocal, Date.now());
+						comboText.nbSteps = 50;
+						comboText.x = ((fieldWidth*tileWidth)/2 - (4.15 * comboCounterLocal*20)/2);
+						comboText.y = ((fieldHeight*tileHeight)/2) - (comboCounterLocal*10);
+						comboText.text(comboCounterLocal+"x COMBO!");
+						comboText.css({'font-size':(comboCounterLocal*20)+'px'});
+					}, (comboCounterLocal*200));
 				}
-			})
-		;
+			}
+		}
 	}
 	
 	function checkBoard(color, x, y, direction, amount) {
@@ -286,7 +317,7 @@ Crafty.scene("main", function () {
 							} else if (fieldArray[y][x+1].color === color) {
 								checkBoard(color, x+1, y, "x", amount+1);
 							} else if (amount > 2) {
-								console.log("Trouvé horiz !", x, y, amount);
+								// console.log("Trouvé horiz !", x, y, amount);
 								comboCounter++;
 								updateScore(10*amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight});
 								// let's delete the tiles
@@ -299,7 +330,9 @@ Crafty.scene("main", function () {
 									if (y < (fieldHeight-1)) {
 										checkBoard(fieldArray[y+1][0].color, 0, y+1, "x", 1);
 									} else {
-										console.log("Fini !");
+										// console.log("Fini x!");
+										checkXEnded = true;
+										comboCheck(comboCounter*-1); // when we pass a negative value, just checks if combo ended
 									}
 								}
 							} else if (x < (fieldWidth-3)) {
@@ -309,12 +342,14 @@ Crafty.scene("main", function () {
 								if (y < (fieldHeight-1)) {
 									checkBoard(fieldArray[y+1][0].color, 0, y+1, "x", 1);
 								} else {
-									console.log("Fini !");
+									// console.log("Fini x!");
+									checkXEnded = true;
+									comboCheck(comboCounter*-1); // when we pass a negative value, just checks if combo ended
 								}
 							}
 						} else {
 							if (amount > 2) {
-								console.log("Trouvé horiz !", x, y, amount);
+								// console.log("Trouvé horiz !", x, y, amount);
 								comboCounter++;
 								updateScore(10*amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight});
 								// let's delete the tiles
@@ -325,11 +360,15 @@ Crafty.scene("main", function () {
 							if (y < (fieldHeight-1)) {
 								checkBoard(fieldArray[y+1][0].color, 0, y+1, "x", 1);
 							} else {
-								console.log("Fini !");
+								// console.log("Fini x!");
+								checkXEnded = true;
+								comboCheck(comboCounter*-1); // when we pass a negative value, just checks if combo ended
 							}
 						}
 					} else {
-						console.log("Fini !");
+						// console.log("Fini x!");
+						checkXEnded = true;
+						comboCheck(comboCounter*-1); // when we pass a negative value, just checks if combo ended
 					}
 					break;
 				case "y":
@@ -341,7 +380,7 @@ Crafty.scene("main", function () {
 							} else if (fieldArray[y+1][x].color === color) {
 								checkBoard(color, x, y+1, "y", amount+1);
 							} else if (amount > 2) {
-								console.log("Trouvé vert !", x, y, amount);
+								// console.log("Trouvé vert !", x, y, amount);
 								comboCounter++;
 								updateScore(10*amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight });
 								// let's delete the tiles
@@ -354,7 +393,9 @@ Crafty.scene("main", function () {
 									if (x < (fieldWidth-1)) {
 										checkBoard(fieldArray[0][x+1].color, x+1, 0, "y", 1);
 									} else {
-										console.log("Fini !");
+										// console.log("Fini y!");
+										checkYEnded = true;
+										comboCheck(comboCounter*-1); // when we pass a negative value, just checks if combo ended
 									}
 								}
 							} else if (y < (fieldHeight-3)) {
@@ -364,12 +405,14 @@ Crafty.scene("main", function () {
 									if (x < (fieldWidth-1)) {
 										checkBoard(fieldArray[0][x+1].color, x+1, 0, "y", 1);
 								} else {
-									console.log("Fini !");
+									// console.log("Fini y!");
+									checkYEnded = true;
+									comboCheck(comboCounter*-1); // when we pass a negative value, just checks if combo ended
 								}
 							}
 						} else {
 							if (amount > 2) {
-								console.log("Trouvé vert !", x, y, amount);
+								// console.log("Trouvé vert !", x, y, amount);
 								comboCounter++;
 								updateScore(10*amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight });
 								// let's delete the tiles
@@ -380,11 +423,15 @@ Crafty.scene("main", function () {
 							if (x < (fieldWidth-1)) {
 								checkBoard(fieldArray[0][x+1].color, x+1, 0, "y", 1);
 							} else {
-								console.log("Fini !");
+								// console.log("Fini y!");
+								checkYEnded = true;
+								comboCheck(comboCounter*-1); // when we pass a negative value, just checks if combo ended
 							}
 						}
 					} else {
-						console.log("Fini !");
+						// console.log("Fini y!");
+						checkYEnded = true;
+						comboCheck(comboCounter*-1); // when we pass a negative value, just checks if combo ended
 					}
 					break;
 			}
@@ -505,7 +552,15 @@ Crafty.scene("main", function () {
 	var scoreTotal = 0;
 	var scoreText = Crafty.e("2D, DOM, Text")
 						.attr({ x:450, y:32 })
-						.css({'font-size':'16px', 'font-weight': 'bold', 'font-family':'Arial sans-serif', 'color': '#190adb' })
+						// .css({'font-size':'16px', 'font-weight': 'bold', 'font-family':'Arial sans-serif', 'color': '#190adb' })
+						.css({
+							'font-size':'20px', 
+							'font-weight':'bold', 
+							'font-family':'Arial, sans-serif', 
+							'color': '#190adb',
+							// '-webkit-text-stroke': '1px white',
+							'text-shadow': '-2px 2px 2px #fff'
+						})
 						.text(scoreTotal)
 					;
 	
@@ -518,7 +573,7 @@ Crafty.scene("main", function () {
 	drawField();
 	checkBoard();
 	blinkMatches();
-	comboCheck();
+	// comboCheck();
 	console.log(comboCounter); */
 	
 	var no_play = 0;
@@ -550,11 +605,11 @@ Crafty.scene("main", function () {
 		// we trigger that new event every X ms, first we drop all the tiles, then we check for matching tiles, then we draw the new field
 		moveTilesId = window.setInterval(function () {
 			// if (!PAUSE_MODE) drawField();
-			if (!PAUSE_MODE) comboCounter = 0;
+			if (!PAUSE_MODE) {checkXEnded = false; checkYEnded = false; comboCounter = 0;}
 			if (!PAUSE_MODE) checkMoving();
 			if (!PAUSE_MODE) checkBoard();
 			if (!PAUSE_MODE) blinkMatches();
-			if (!PAUSE_MODE) comboCheck();
+			// if (!PAUSE_MODE) comboCheck();
 			if (!PAUSE_MODE) dropTiles();
 			if (!PAUSE_MODE) drawField();
 		}, 500);
