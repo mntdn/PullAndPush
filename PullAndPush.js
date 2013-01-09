@@ -11,7 +11,6 @@ Crafty.background('lightgrey');
 //
 // ************************************************************************************
 
-
 var DEBUG_MODE = false;
 var PAUSE_MODE = false;
 var MENU_MODE = true; // when we display the menu, true by default
@@ -21,8 +20,6 @@ var fieldWidth, fieldHeight; // width and height of the field, in number of tile
 var offsetTop = 10, offsetLeft = 10; // how many pixels away from the left and top borders of the scene
 
 var fullColumns = new Array(); 
-
-var colorsArray = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"];
 
 var moveTilesId = 0; // ID of the setInterval used for the game
 
@@ -34,17 +31,26 @@ var currentScore = 0,
 var levelCaps = [60, 150, 300, 500, 600, 700, 800, 900]; // how many points to go to next level
 var intervalBetweenUpdates = 1000; // the number of ms between each update of the scene
 var newLevelUpdateIntervalDecrease = 100; // each level, we decrease the interval between updates by this nummber of ms
-var numberOfColors = 3; // the number of authorized colors, max is colorsArray.length
+var numberOfColors = 3; // the number of authorized colors, max is maxNumberOfColors
+var maxNumberOfColors = 6; // the maximum number of colors
 
 var tileWidth = 52, tileHeight = 32;
-Crafty.sprite("assets/tile.png", {sprTile:[0,0,tileWidth,tileHeight]});
-Crafty.sprite("assets/pad.png", {sprPad:[0,0,tileWidth,tileHeight]});
+Crafty.sprite("assets/tiles.png", {
+	sprTile0:[0,0,tileWidth,tileHeight],
+	sprTile1:[52,0,tileWidth,tileHeight],
+	sprTile2:[52*2,0,tileWidth,tileHeight],
+	sprTile3:[52*3,0,tileWidth,tileHeight],
+	sprTile4:[52*4,0,tileWidth,tileHeight],
+	sprTile5:[52*5,0,tileWidth,tileHeight],
+	sprPad:[52*6,0,tileWidth,tileHeight]
+});
 
 var comboCounter = 0; // Counts the number of simultaneous matches we did
 var checkXEnded = false, checkYEnded = false; // used to know if we have finished checking for matches on X and Y
 var comboText; // will contain the entity printing the current combo
 
 function initGame (w, h) {
+	PAUSE_MODE = false;
 	fieldWidth = w; fieldHeight = h; // width and height of the field, in number of tiles
 	fieldArray = new Array();
 	for (var i=0; i<fieldHeight; i++) {
@@ -61,7 +67,7 @@ function initGame (w, h) {
 	currentScore = 0;
 	intervalBetweenUpdates = 1000; // the number of ms between each update of the scene
 	newLevelUpdateIntervalDecrease = 100; // each level, we decrease the interval between updates by this nummber of ms
-	numberOfColors = 3; // the number of authorized colors, max is colorsArray.length
+	numberOfColors = 3; // the number of authorized colors
 }
 
 function drawField() {
@@ -211,7 +217,7 @@ function pushColumn(column, color) {
 	fieldArray[(fieldHeight-1)][column].color = color;
 }
 
-function updateScore(toAdd, pos) {
+function updateScore(toAdd, pos, color) {
 	// updates the current score by toAdd
 	// pos is an {x, y} object indicating where the score animation should take place
 	// var s = scoreText.text();
@@ -223,34 +229,37 @@ function updateScore(toAdd, pos) {
 	// }
 	if (!MENU_MODE) {
 		// we only count the score when we play
-		currentScore += (toAdd*comboCounter);
-		scoreText.text(currentScore);
-		// console.log(pos);
-		// a litte animation to show the score gained
-		var nbSteps = 50;
-		if (pos.y + (toAdd*comboCounter) > winHeight) pos.y = winHeight - (toAdd*comboCounter) - 10;
-		Crafty.e("DOM, Text")
-			.attr({x: pos.x, y: pos.y})
-			.text(toAdd*comboCounter)
-			.css({
-				'font-size':(toAdd*comboCounter)+'px', 
-				'font-weight':'bold', 
-				'font-family':'Arial, sans-serif', 
-				'color': '#FFF',
-				'-webkit-text-stroke': '1px black',
-				'text-shadow': '-2px 2px 2px #000'
-			})
-			.bind("EnterFrame", function (e) {
-				if (nbSteps-- > 0) {
-					this.y -= 0.7;
-				} else {
-					this.destroy();
-				}
-			})
-		;
+		if (color !== 0) { 
+			// the dirt doesn't give you any score !
+			currentScore += (toAdd*comboCounter);
+			scoreText.text("$"+currentScore);
+			// console.log(pos);
+			// a litte animation to show the score gained
+			var nbSteps = 50;
+			if (pos.y + (toAdd*comboCounter) > winHeight) pos.y = winHeight - (toAdd*comboCounter) - 10;
+			Crafty.e("DOM, Text")
+				.attr({x: pos.x, y: pos.y})
+				.text(toAdd*comboCounter)
+				.css({
+					'font-size':(toAdd*comboCounter)+'px', 
+					'font-weight':'bold', 
+					'font-family':'PaperCut, Arial, sans-serif', 
+					'color': '#FFF',
+					'-webkit-text-stroke': '1px black',
+					'text-shadow': '-2px 2px 2px #000'
+				})
+				.bind("EnterFrame", function (e) {
+					if (nbSteps-- > 0) {
+						this.y -= 0.7;
+					} else {
+						this.destroy();
+					}
+				})
+			;
 		
-		comboCheck(comboCounter); // we display combo if it is needed
-		// console.log("Won",toAdd,"points");
+			comboCheck(comboCounter); // we display combo if it is needed
+			// console.log("Won",toAdd,"points");
+		}
 	}
 }
 
@@ -271,7 +280,7 @@ function comboCheck(comboCounterLocal) {
 				.css({
 					'font-size':(comboCounterLocal*20)+'px', 
 					'font-weight':'bold', 
-					'font-family':'Arial, sans-serif', 
+					'font-family':'PaperCut, Arial, sans-serif', 
 					'color': '#F00',
 					'text-align':'center',
 					'margin':'0',
@@ -293,7 +302,7 @@ function comboCheck(comboCounterLocal) {
 					.css({
 						'font-size':(comboCounterLocal*20)+'px', 
 						'font-weight':'bold', 
-						'font-family':'Arial, sans-serif', 
+						'font-family':'PaperCut, Arial, sans-serif', 
 						'color': '#F00',
 						'text-align':'center',
 						'margin':'0',
@@ -346,7 +355,7 @@ function checkBoard(color, x, y, direction, amount) {
 						} else if (amount > 2) {
 							// console.log("Trouvé horiz !", x, y, amount);
 							comboCounter++;
-							updateScore(10*amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight});
+							updateScore(10*amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight}, color);
 							// let's delete the tiles
 							for (var i=x; i > x-amount; i--)
 								fieldArray[y][i].color = -2;
@@ -378,7 +387,7 @@ function checkBoard(color, x, y, direction, amount) {
 						if (amount > 2) {
 							// console.log("Trouvé horiz !", x, y, amount);
 							comboCounter++;
-							updateScore(10*amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight});
+							updateScore(10*amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight}, color);
 							// let's delete the tiles
 							for (var i=x; i > x-amount; i--)
 								fieldArray[y][i].color = -2;
@@ -409,7 +418,7 @@ function checkBoard(color, x, y, direction, amount) {
 						} else if (amount > 2) {
 							// console.log("Trouvé vert !", x, y, amount);
 							comboCounter++;
-							updateScore(10*amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight });
+							updateScore(10*amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight }, color);
 							// let's delete the tiles
 							for (var i=y; i > y-amount; i--)
 								fieldArray[i][x].color = -2;
@@ -441,7 +450,7 @@ function checkBoard(color, x, y, direction, amount) {
 						if (amount > 2) {
 							// console.log("Trouvé vert !", x, y, amount);
 							comboCounter++;
-							updateScore(10*amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight });
+							updateScore(10*amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight }, color);
 							// let's delete the tiles
 							for (var i=y; i > y-amount; i--)
 								fieldArray[i][x].color = -2;
@@ -507,10 +516,10 @@ function blinkMatches() {
 
 Crafty.c("tile", {
 	init: function () {},
-	tile: function (xTile, yTile, colorTile) { // colorTile is a number between 0 and colorsArray.length-1
-		var tileId = Crafty.e("2D, Canvas, Tint, Collision, sprTile")
+	tile: function (xTile, yTile, colorTile) { // colorTile is a number between 0 and maxNumberOfColors
+		var tileId = Crafty.e("2D, Canvas, Tint, Collision, sprTile"+colorTile)
 			.attr({ x: xTile, y: yTile, color: colorTile })
-			.tint(colorsArray[colorTile], 0.5)
+			// .tint(colorsArray[colorTile], 0.5)
 		;
 		return tileId[0];
 	}
@@ -521,7 +530,17 @@ Crafty.scene("menu", function () {
 	
 	MENU_MODE = true;
 	
+	// Crafty.e("2D, Canvas, sprPad")
+		// .attr({ x: 100, y: 100 })
+	// ;
+	
 	initGame(11,12);
+	
+	for (var i=fieldHeight-1; i>fieldHeight-8; i--) {
+		for (var j=0; j<fieldWidth; j++)
+			fieldArray[i][j] = { "color": Crafty.math.randomInt(-1,4), "id": -1 };
+	}
+	drawField();
 
 	Crafty.c("pad", {
 		init: function () {
@@ -581,7 +600,7 @@ Crafty.scene("menu", function () {
 		.color("black");
 		
 	Crafty.e("2D, DOM, Color")
-		.attr({x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.5 })
+		.attr({x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.7 })
 		.color("white");
 	Crafty.e("pad");
 	
@@ -602,8 +621,8 @@ Crafty.scene("menu", function () {
 		moveTilesId = window.setInterval(function () {
 			if (!PAUSE_MODE) {
 				// we add two tiles every 3 ticks
+				Crafty.trigger("MovePad");
 				if (tick++ >= 3) {
-					Crafty.trigger("MovePad");
 					var authorizedColumns = new Array();
 					for (var i=0; i<fullColumns.length; i++) 
 						if (fullColumns[i] == 0) authorizedColumns.push(i);
@@ -611,13 +630,13 @@ Crafty.scene("menu", function () {
 					if (authorizedColumns.length > 0) {
 						// if the game is not over!
 						var rColumn = Crafty.math.randomElementOfArray(authorizedColumns);
-						fieldArray[0][rColumn].color = Crafty.math.randomInt(0,colorsArray.length-1);
+						fieldArray[0][rColumn].color = Crafty.math.randomInt(0,maxNumberOfColors-1);
 						fieldArray[0][rColumn].moving = 1;
 						if (authorizedColumns.length > 1) {
 							do {
 								var rColumn2 = Crafty.math.randomElementOfArray(authorizedColumns);
 							} while (rColumn2 === rColumn);
-							fieldArray[0][rColumn2].color = Crafty.math.randomInt(0,colorsArray.length-1);
+							fieldArray[0][rColumn2].color = Crafty.math.randomInt(0,maxNumberOfColors-1);
 							fieldArray[0][rColumn2].moving = 1;
 							// console.log(authorizedColumns, rColumn, rColumn2);
 						}
@@ -632,7 +651,7 @@ Crafty.scene("menu", function () {
 			if (!PAUSE_MODE) blinkMatches();
 			if (!PAUSE_MODE) dropTiles();
 			if (!PAUSE_MODE) drawField();
-		}, 100);
+		}, 600);
 	}
 	
 	if (!no_play) {
@@ -719,34 +738,34 @@ Crafty.scene("main", function () {
 	Crafty.e("2D, DOM, Text")
 		.attr({ x:450, y:32 })
 		.css({
-			'font-size':'20px', 
+			'font-size':'30px', 
 			'font-weight':'bold', 
-			'font-family':'Arial, sans-serif', 
+			'font-family':'PaperCut, Arial, sans-serif', 
 			'color': '#000',
 			// '-webkit-text-stroke': '1px white',
 			'text-shadow': '-2px 2px 2px #fff'
 		})
-		.text("Score")
+		.text("Money")
 	;
 	scoreText = Crafty.e("2D, DOM, Text")
-						.attr({ x:450, y:50 })
+						.attr({ x:450, y:70, w: 150 })
 						.css({
-							'font-size':'20px', 
+							'font-size':'30px', 
 							'font-weight':'bold', 
-							'font-family':'Arial, sans-serif', 
+							'font-family':'PaperCut, Arial, sans-serif', 
 							'color': '#190adb',
 							// '-webkit-text-stroke': '1px white',
 							'text-shadow': '-2px 2px 2px #fff'
 						})
-						.text(currentScore)
+						.text("$"+currentScore)
 					;
 					
 	Crafty.e("2D, DOM, Text")
-		.attr({ x:450, y:92 })
+		.attr({ x:450, y:112 })
 		.css({
-			'font-size':'20px', 
+			'font-size':'30px', 
 			'font-weight':'bold', 
-			'font-family':'Arial, sans-serif', 
+			'font-family':'PaperCut, Arial, sans-serif', 
 			'color': '#000',
 			// '-webkit-text-stroke': '1px white',
 			'text-shadow': '-2px 2px 2px #fff'
@@ -754,11 +773,11 @@ Crafty.scene("main", function () {
 		.text("Level")
 	;
 	levelText = Crafty.e("2D, DOM, Text")
-						.attr({ x:450, y:112 })
+						.attr({ x:450, y:142 })
 						.css({
-							'font-size':'20px', 
+							'font-size':'30px', 
 							'font-weight':'bold', 
-							'font-family':'Arial, sans-serif', 
+							'font-family':'PaperCut, Arial, sans-serif', 
 							'color': '#190adb',
 							// '-webkit-text-stroke': '1px white',
 							'text-shadow': '-2px 2px 2px #fff'
@@ -816,7 +835,7 @@ Crafty.scene("main", function () {
 						levelText.text(currentLevel);
 						intervalBetweenUpdates -= newLevelUpdateIntervalDecrease;
 						// intervalBetweenTiles -= newLevelTilesIntervalDecrease;
-						if (numberOfColors < colorsArray.length) numberOfColors++; //we add one possible color to the mix
+						if (numberOfColors < maxNumberOfColors) numberOfColors++; //we add one possible color to the mix
 						window.clearInterval(moveTilesId);
 						// window.clearInterval(addTilesId);
 						gameLoop();
@@ -847,8 +866,7 @@ Crafty.scene("main", function () {
 });
 
 Crafty.load([
-		"assets/tile.png", 
-		"assets/pad.png"
+		"assets/tiles.png", 
 	],
 	function() {
 		//when loaded

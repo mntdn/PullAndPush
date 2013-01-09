@@ -1,5 +1,10 @@
+@font-face {
+  font-family: PaperCut;
+  src: url("../assets/papercuts-2.ttf");
+}
+
 body {
-	font-family: Arial, sans-serif;
+	font-family: PaperCut, Arial, sans-serif;
 }
 
 .menuButton {
