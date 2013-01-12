@@ -123,9 +123,6 @@ Crafty.scene("game", function () {
 	var checkXEnded = false, checkYEnded = false; // used to know if we have finished checking for matches on X and Y
 	var comboText; // will contain the entity printing the current combo
 
-	// drawing the progress bar
-
-
 	function initGame (w, h) {
 		PAUSE_MODE = false;
 		if (moveTilesId !== -1)
@@ -338,6 +335,8 @@ Crafty.scene("game", function () {
 			
 				comboCheck(comboCounter); // we display combo if it is needed
 				// console.log("Won",toAdd,"points");
+			} else {
+				Crafty.audio.play("stone");
 			}
 		}
 	}
@@ -777,47 +776,104 @@ Crafty.scene("game", function () {
 		
 		Crafty.c("pad", {
 			init: function () {
-				var padLoadId = -1; // the ID of the tile on our pad
+				var padLoadId = new Array(); // the ID of the tiles on our pad, we begin with an empty pad
 				Crafty.e("2D, Canvas, sprPad")
 					.attr({ x:0+offsetLeft, y:((fieldHeight*tileHeight) + 4 + offsetTop) })
 					.bind('KeyDown', function(e) {
 						if(e.key == Crafty.keys['LEFT_ARROW']) {
 							if (this.x - tileWidth >= offsetLeft) {
 								this.x -= tileWidth;
-								if (padLoadId != -1)
-									Crafty(padLoadId).
-										attr({x:this.x, y:(this.y-tileHeight) });
+								// we draw all the tiles
+								for (var i=0; i < padLoadId.length; i++)
+									Crafty(padLoadId[i]).attr({x:this.x, y:this.y-(tileHeight*(i+1)) });
 							}
 						} else if (e.key == Crafty.keys['RIGHT_ARROW']) {
-							// soundManager.play('stoneSnd');
-							Crafty.audio.play("stone");
 							if (this.x + tileWidth <= (tileWidth*(fieldWidth-1)+offsetLeft)) {
 								this.x += tileWidth;
-								if (padLoadId != -1)
-									Crafty(padLoadId).
-										attr({x:this.x, y:(this.y-tileHeight) });
+								// we draw all the tiles
+								for (var i=0; i < padLoadId.length; i++)
+									Crafty(padLoadId[i]).attr({x:this.x, y:this.y-(tileHeight*(i+1)) });
 							}
 						} else if (e.key == Crafty.keys['J']) {
+							// Loading the pad
 							if (!PAUSE_MODE) {
 								var col = Math.round(this.x/tileWidth);
-								if (padLoadId != -1) {
-									// we unload the tile and empty the pad
-									if (fullColumns[col] !== 1) {
-										pushColumn(col, Crafty(padLoadId).color);
+								if (fieldArray[(fieldHeight-1)][col].color != -1) {
+									if (padLoadId.length < 2) {
+										// pad not full, we can load a tile
+										this.y += tileHeight;
+										if (padLoadId.length === 1) {
+											// we already have on tile in the pad
+											// we move the first tile
+											Crafty(padLoadId[0]).attr({x:this.x, y:this.y-tileHeight});
+											// and add the new one
+											var newTile = Crafty.e("tile").tile(this.x, this.y-(tileHeight*2), fieldArray[(fieldHeight-1)][col].color);
+										} else {
+											// empty pad
+											var newTile = Crafty.e("tile").tile(this.x, this.y-tileHeight, fieldArray[(fieldHeight-1)][col].color);
+										}
+										// console.log(this.x, this.y-tileHeight, fieldArray[(fieldHeight-1)][col].color);
+										padLoadId.push(newTile);
+										pullColumn(col);
 										drawField();
-										Crafty(padLoadId).destroy();
-										padLoadId = -1;
+									}
+									// console.log(padLoadId);
+								}
+							}
+						} else if (e.key == Crafty.keys['K']) {
+							// Unloading the pad tile by tile
+							/* if (!PAUSE_MODE) {
+								var col = Math.round(this.x/tileWidth);
+								if (padLoadId.length > 0) {
+									// we unload the tile on the pad
+									if (fullColumns[col] !== 1) {
+										var currentTile = padLoadId.pop();
+										pushColumn(col, Crafty(currentTile).color);
+										drawField();
+										Crafty(currentTile).destroy();
 										this.y -= tileHeight;
+										if (padLoadId.length === 1) Crafty(padLoadId[0]).attr({x:this.x, y:this.y-tileHeight});
 									} else {
 										console.log("Column full!");
 									}
-								} else if (fieldArray[(fieldHeight-1)][col].color != -1) {
-									// empty pad, so we load the tile
-									this.y += tileHeight;
-									padLoadId = Crafty.e("tile")
-										.tile(this.x, this.y-tileHeight, fieldArray[(fieldHeight-1)][col].color);
-									pullColumn(col);
-									drawField();
+									// console.log(padLoadId);
+								}
+							} */
+							
+							// unloading the whole pad
+							if (!PAUSE_MODE) {
+								var col = Math.round(this.x/tileWidth);
+								if (padLoadId.length > 0) {
+									if (padLoadId.length === 1) {
+										// just one tile on the pad
+										if (fullColumns[col] !== 1) {
+											var currentTile = padLoadId.pop();
+											pushColumn(col, Crafty(currentTile).color);
+											drawField();
+											Crafty(currentTile).destroy();
+											this.y -= tileHeight;
+											if (padLoadId.length === 1) Crafty(padLoadId[0]).attr({x:this.x, y:this.y-tileHeight});
+										} else {
+											console.log("Column full!");
+										}
+										// console.log(padLoadId);
+									} else {
+										// two tiles on the pad
+										var sum = 0;
+										for (var j=0; j<fieldHeight; j++)
+											if (fieldArray[j][col].color !== -1)
+												sum++;
+										if (sum <= fieldHeight-2) {
+											// we have room for two tiles
+											for (var i=0; i<2; i++) {
+												var currentTile = padLoadId.pop();
+												pushColumn(col, Crafty(currentTile).color);
+												Crafty(currentTile).destroy();
+												this.y -= tileHeight;
+											}
+											drawField();
+										}
+									}
 								}
 							}
 						} else if (e.key == Crafty.keys['S']) {
