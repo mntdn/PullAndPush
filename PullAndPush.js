@@ -1,78 +1,18 @@
 var winWidth = 600;
-var winHeight = 450;
+var winHeight = 500;
 
+// Load the Kongregate API
+var kongregate;
+kongregateAPI.loadAPI(onComplete);
+
+// Callback function
+function onComplete(){
+	// Set the global kongregate API object
+	kongregate = kongregateAPI.getAPI();
+	kongregate.stats.submit("test",360);
+}
 Crafty.init(winWidth,winHeight);
 Crafty.background('lightgrey');
-
-Crafty.scene("loading", function () {
-	Crafty.e("2D, DOM, Text")
-		.attr({ x:0, y:0, w: winWidth, h:100 })
-		.css({
-			'font-size':'60px', 
-			'font-weight':'bold',
-			'text-align':'center',
-			'font-family':'PaperCut, Arial, sans-serif', 
-			'color': '#000',
-			// '-webkit-text-stroke': '1px white',
-			'text-shadow': '-2px 2px 2px #fff'
-		})
-		.text("Ozzie Miner")
-	;
-	
-	Crafty.e("2D, DOM, Text")
-		.attr({ x:0, y:150, w: winWidth, h:400 })
-		.css({
-			'font-size':'30px', 
-			'font-weight':'bold',
-			'text-align':'center',
-			'font-family':'PaperCut, Arial, sans-serif', 
-			'color': '#000',
-			// '-webkit-text-stroke': '1px white',
-			// 'text-shadow': '-2px 2px 2px #fff'
-		})
-		.text("You’re Rick, an Australian miner, and you only have your mining tools left... You have to make some money mining, and be quick about it!")
-	;
-	
-	Crafty.e("2D, Canvas, Color")
-		.attr({ x: 48, y: winHeight - 80 - 2, w: winWidth - 50 - 50, h: 44 })
-		.color("black")
-	;
-	
-	var progressBar = Crafty.e("2D, Canvas, Color")
-		.attr({ x: 50, y: winHeight - 80, w: 0, h: 40 })
-		.color("red")
-	;
-	
-	Crafty.support.audio = true;
-	Crafty.audio.supported["mp3"] = true;
-	Crafty.audio.supported["ogg"] = true;
-	Crafty.audio.supported["wav"] = true;
-	Crafty.load([
-			"assets/tiles.png", 
-			"assets/dirt.jpg", 
-			"assets/stone.mp3", 
-			"assets/stone.ogg", 
-			"assets/stone.wav"
-		],
-		function() {
-			//when loaded
-			// console.log(Crafty.assets);
-			Crafty.scene("game"); //go to the menu
-		},
-
-		function(e) {
-			// console.log(e.loaded, e.total, e.percent ,e.src);
-			
-			progressBar.w = (e.percent * (winWidth - 50 - 50 - 4)/100);
-		},
-
-		function(e) {
-			//uh oh, error loading
-			console.log("err",e);
-		}
-	);
-})
-
 
 Crafty.scene("game", function () {
 
@@ -85,6 +25,7 @@ Crafty.scene("game", function () {
 
 	var DEBUG_MODE = false;
 	var PAUSE_MODE = false;
+	var LOADED = false;
 	var MENU_MODE = true; // when we display the menu, true by default
 
 	var fieldArray = new Array(); // contains the field with the tiles
@@ -99,10 +40,10 @@ Crafty.scene("game", function () {
 		levelText;
 	var currentScore = 0,
 		scoreText;
-	// var levelCaps = [500, 1500, 3000, 10000, 30000, 60000, 100000]; // how many points to go to next level
-	var levelCaps = [60, 150, 300, 500, 600, 700, 800, 900]; // how many points to go to next level
-	var intervalBetweenUpdates = 1000; // the number of ms between each update of the scene
-	var newLevelUpdateIntervalDecrease = 100; // each level, we decrease the interval between updates by this nummber of ms
+	var levelCaps = [60, 150, 300, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300]; // how many points to go to next level
+	var intervalBetweenUpdates = 500; // the number of ms between each update of the scene
+	var newLevelUpdateIntervalDecrease = 50; // each level, we decrease the interval between updates by this nummber of ms
+	// var newLevelUpdateIntervalDecrease = 800; // each level, we decrease the interval between updates by this nummber of ms
 	var numberOfColors = 3; // the number of authorized colors, max is maxNumberOfColors
 	var maxNumberOfColors = 6; // the maximum number of colors
 
@@ -118,6 +59,7 @@ Crafty.scene("game", function () {
 	});
 	
 	Crafty.sprite("assets/dirt.jpg", { sprDirt:[0,0,340,340] });
+	Crafty.sprite("assets/Title.png", { sprTitle:[0,0,256,128] });
 
 	var comboCounter = 0; // Counts the number of simultaneous matches we did
 	var checkXEnded = false, checkYEnded = false; // used to know if we have finished checking for matches on X and Y
@@ -141,11 +83,79 @@ Crafty.scene("game", function () {
 			fullColumns[j] = 0;
 		currentLevel = 1;
 		currentScore = 0;
-		intervalBetweenUpdates = 1000; // the number of ms between each update of the scene
-		newLevelUpdateIntervalDecrease = 100; // each level, we decrease the interval between updates by this nummber of ms
+		intervalBetweenUpdates = 500; // the number of ms between each update of the scene
 		numberOfColors = 3; // the number of authorized colors
 	}
 
+	function drawButton(x,y,w,h,text,action,z) {
+		// x,y,w and h are the position, width and height
+		// text is the text printed in the button
+		// action is what happens when you click
+		// z is the z-index of the button
+		Crafty.e("2D, DOM, Color")
+			.attr({ x: x, y: y, w: w, h: h, z:z })
+			.color("black")
+		;
+		Crafty.e("2D, DOM, Mouse, Color")
+			.attr({ x: x+2, y: y+2, w: w-4, h: h-4, z:z+1 })
+			.color("#900")
+			.css({'cursor': 'hand'})
+			.bind("MouseOver", function (e) {
+				this.color("#B00");
+			})
+			.bind("MouseOut", function (e) {
+				this.color("#900");
+			})
+			.bind("Click", function (e) {
+				action();
+			})
+		;
+		Crafty.e("2D, DOM, Text")
+			.attr({ x:x, y:y, w: w, h:h, z:z+2 })
+			.css({
+				'font-size':'30px', 
+				'font-weight':'bold',
+				'text-align':'center',
+				'font-family':'PaperCut, Arial, sans-serif', 
+				'color': '#fff'
+			})
+			.css({'cursor': 'hand'})
+			.text(text)
+		;
+	}
+	
+	function pauseScreen() {
+		Crafty.e("2D, DOM, Color, Mouse")
+			.attr({ x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.4, z: 5 })
+			.color("black")
+			.bind("Click", function (e) {
+				PAUSE_MODE = !PAUSE_MODE;
+				this.destroy();
+				textPause.destroy();
+			})
+			.bind('KeyDown', function(e) {
+				if(e.key == Crafty.keys['S'] || e.key == Crafty.keys['ESC']) {
+					PAUSE_MODE = !PAUSE_MODE;
+					this.destroy();
+					textPause.destroy();
+				}
+			})
+		;
+		var textPause = Crafty.e("2D, DOM, Text")
+			.attr({ x:0, y:150, w: winWidth, h:400, z:6 })
+			.css({
+				'font-size':'30px', 
+				'font-weight':'bold',
+				'text-align':'center',
+				'font-family':'PaperCut, Arial, sans-serif', 
+				'color': '#fff',
+				// '-webkit-text-stroke': '1px white',
+				// 'text-shadow': '-2px 2px 2px #fff'
+			})
+			.text("PAUSE<br />Press the Esc key or click anywhere to resume play")
+		;
+	}
+	
 	function drawField() {
 		// we redraw all the tiles if they have changed
 		var line = 0, col = 0;
@@ -191,21 +201,32 @@ Crafty.scene("game", function () {
 		if (fullColumns.indexOf(0) === -1) {
 			window.clearInterval(moveTilesId);
 			if (MENU_MODE) {
-				Crafty.scene("menu");
+				// Crafty.scene("menu");
 			} else {
 				PAUSE_MODE = true;
-				console.log("GAME OVER !");
-				Crafty.e("2D, Canvas, Color, Mouse")
-					.attr({ x: 50, y: 50, w: 200, h: 150 })
-					.color("white")
-					.bind("Click", function (e) {
-						Crafty.scene("main");
-					})
+				Crafty.e("2D, DOM, Color, Mouse")
+					.attr({ x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.8, z:10 })
+					.color("black")
+					// .bind("Click", function (e) {
+						// Crafty.scene("main");
+					// })
 				;
 				Crafty.e("2D, DOM, Text")
-					.attr({ x: 75, y: 75, w: 150 })
-					.text("GAME OVER ! Click to play again")
+					.attr({ x:0, y:50, w: winWidth, h:400, z:11 })
+					.css({
+						'font-size':'30px', 
+						'font-weight':'bold',
+						'text-align':'center',
+						'font-family':'PaperCut, Arial, sans-serif', 
+						'color': '#fff',
+					})
+					.text("You win $"+currentScore+"!<br />But you can do better...<br />Click try again if you dare!")
 				;
+				// Crafty.e("HTML")
+					// .attr({x:200, y:250, w:200, h:40})
+					// .replace("<p class='menuButton' onClick='Crafty.scene(\"main\");'>Try again</p>")
+				// ;
+				drawButton(200, 250, 200, 50, "Try again", function () {Crafty.scene("main");}, 11);
 			}
 		}
 		// console.log(fullColumns);
@@ -432,7 +453,7 @@ Crafty.scene("game", function () {
 								checkBoard(color, x+1, y, "x", amount+1);
 							} else if (amount > 2) {
 								// console.log("Trouvé horiz !", x, y, amount);
-								comboCounter++;
+								if (color !== 0) comboCounter++; // dirt doesn't add to the combo counter
 								updateScore(10*amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight}, color);
 								// let's delete the tiles
 								for (var i=x; i > x-amount; i--)
@@ -464,7 +485,7 @@ Crafty.scene("game", function () {
 						} else {
 							if (amount > 2) {
 								// console.log("Trouvé horiz !", x, y, amount);
-								comboCounter++;
+								if (color !== 0) comboCounter++; // dirt doesn't add to the combo counter
 								updateScore(10*amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight}, color);
 								// let's delete the tiles
 								for (var i=x; i > x-amount; i--)
@@ -495,7 +516,7 @@ Crafty.scene("game", function () {
 								checkBoard(color, x, y+1, "y", amount+1);
 							} else if (amount > 2) {
 								// console.log("Trouvé vert !", x, y, amount);
-								comboCounter++;
+								if (color !== 0) comboCounter++; // dirt doesn't add to the combo counter
 								updateScore(10*amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight }, color);
 								// let's delete the tiles
 								for (var i=y; i > y-amount; i--)
@@ -527,7 +548,7 @@ Crafty.scene("game", function () {
 						} else {
 							if (amount > 2) {
 								// console.log("Trouvé vert !", x, y, amount);
-								comboCounter++;
+								if (color !== 0) comboCounter++; // dirt doesn't add to the combo counter
 								updateScore(10*amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight }, color);
 								// let's delete the tiles
 								for (var i=y; i > y-amount; i--)
@@ -618,17 +639,182 @@ Crafty.scene("game", function () {
 		
 		MENU_MODE = true;
 		
-		// Crafty.e("2D, Canvas, sprPad")
-			// .attr({ x: 100, y: 100 })
-		// ;
+		if (!LOADED) {
+			Crafty.e("2D, DOM, Color")
+				.attr({ x: 48, y: winHeight - 100 - 2, w: winWidth - 50 - 50, h: 64, z:1 })
+				.color("black")
+			;
+			var progressBar = Crafty.e("2D, DOM, Mouse, Color")
+				.attr({ x: 50, y: winHeight - 100, w: 0, h: 60, z:2 })
+				.color("#900")
+				.css({'cursor': 'hand'})
+				.bind("MouseOver", function (e) {
+					this.color("#B00");
+				})
+				.bind("MouseOut", function (e) {
+					this.color("#900");
+				})
+				.bind("Click", function (e) {
+					Crafty.scene("main");
+				})
+			;
+			var loadText = Crafty.e("2D, DOM, Text")
+				.attr({ x:0, y:winHeight - 95, w: winWidth, h:40, z:3 })
+				.css({
+					'font-size':'40px', 
+					'font-weight':'bold',
+					'text-align':'center',
+					'font-family':'PaperCut, Arial, sans-serif', 
+					'color': '#fff'
+				})
+				.css({'cursor': 'hand'})
+				.text("Loading")
+			;
+			
+			Crafty.support.audio = true;
+			Crafty.audio.supported["mp3"] = true;
+			Crafty.audio.supported["ogg"] = true;
+			Crafty.audio.supported["wav"] = true;
+			Crafty.load([
+					"assets/Title.png", 
+					"assets/tiles.png", 
+					"assets/dirt.jpg", 
+					"assets/stone.mp3", 
+					"assets/stone.ogg", 
+					"assets/stone.wav"
+				],
+				function() {
+					//when loaded
+					// console.log(Crafty.assets);
+					LOADED = true;
+					// Crafty.scene("main"); //go to the menu
+					
+					loadText.text("PLAY");
+					
+					initGame(11,15);
+					
+					Crafty.e("bgDirt");
+					
+					for (var i=0; i<fieldHeight; i++) {
+						for (var j=0; j<fieldWidth; j++)
+							fieldArray[i][j] = { "color": Crafty.math.randomInt(0,5), "id": -1 };
+					}
+					drawField();
+
+						
+					Crafty.e("2D, DOM, Color")
+						.attr({x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.8 })
+						.color("black");
+					
+					Crafty.e("2D, DOM, sprTitle")
+						.attr({ x:(winWidth-256)/2, y: 20 })
+					;
+					
+					Crafty.e("2D, DOM, Text")
+						.attr({ x:0, y:170, w: winWidth, h:400 })
+						.css({
+							'font-size':'22px', 
+							'font-weight':'bold',
+							'text-align':'center',
+							'font-family':'PaperCut, Arial, sans-serif', 
+							'color': '#fff',
+						})
+						.text("You’re Rick, an Australian miner, and you only have your mining tools left... You have to make some money mining, and be quick about it!")
+					;
+					
+					// Crafty.e("HTML, Mouse")
+						// .attr({x:200, y:350, w:200, h:40})
+						// .replace("<p class='menuButton' onClick='Crafty.scene(\"main\");'>PLAY</p>")
+					// ;
+					
+				},
+
+				function(e) {
+					// console.log(e.loaded, e.total, e.percent ,e.src);
+					
+					progressBar.w = (e.percent * (winWidth - 50 - 50 - 4)/100);
+					loadText.text("Loading "+e.loaded+"/"+e.total);
+				},
+
+				function(e) {
+					//uh oh, error loading
+					console.log("err",e);
+				}
+			);
+		} else {
+			Crafty.e("2D, DOM, Color")
+				.attr({ x: 48, y: winHeight - 100 - 2, w: winWidth - 50 - 50, h: 64, z:1 })
+				.color("black")
+			;
+			var progressBar = Crafty.e("2D, DOM, Mouse, Color")
+				.attr({ x: 50, y: winHeight - 100, w: winWidth - 48 - 48, h: 60, z:2 })
+				.color("#900")
+				.css({'cursor': 'hand'})
+				.bind("Click", function (e) {
+					Crafty.scene("main");
+				})
+			;
+			var loadText = Crafty.e("2D, DOM, Text")
+				.attr({ x:0, y:winHeight - 95, w: winWidth, h:40, z:3 })
+				.css({
+					'font-size':'40px', 
+					'font-weight':'bold',
+					'text-align':'center',
+					'font-family':'PaperCut, Arial, sans-serif', 
+					'color': '#fff'
+				})
+				.css({'cursor': 'hand'})
+				.text("PLAY")
+			;
+			
+			initGame(11,15);
+			
+			Crafty.e("bgDirt");
+			
+			for (var i=0; i<fieldHeight; i++) {
+				for (var j=0; j<fieldWidth; j++)
+					fieldArray[i][j] = { "color": Crafty.math.randomInt(0,5), "id": -1 };
+			}
+			drawField();
+
+				
+			Crafty.e("2D, DOM, Color")
+				.attr({x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.8 })
+				.color("black");
+			
+			Crafty.e("2D, DOM, sprTitle")
+				.attr({ x:(winWidth-256)/2, y: 20 })
+			;
+			
+			Crafty.e("2D, DOM, Text")
+				.attr({ x:0, y:170, w: winWidth, h:400 })
+				.css({
+					'font-size':'22px', 
+					'font-weight':'bold',
+					'text-align':'center',
+					'font-family':'PaperCut, Arial, sans-serif', 
+					'color': '#fff',
+				})
+				.text("You’re Rick, an Australian miner, and you only have your mining tools left... You have to make some money mining, and be quick about it!")
+			;
+			
+			// Crafty.e("HTML, Mouse")
+				// .attr({x:200, y:350, w:200, h:40})
+				// .replace("<p class='menuButton' onClick='Crafty.scene(\"main\");'>PLAY</p>")
+			// ;		
+		}
 		
-		initGame(11,12);
+		/* initGame(11,15);
 		
 		Crafty.e("bgDirt");
 		
-		for (var i=fieldHeight-1; i>fieldHeight-8; i--) {
+		// for (var i=fieldHeight-1; i>fieldHeight-8; i--) {
+			// for (var j=0; j<fieldWidth; j++)
+				// fieldArray[i][j] = { "color": Crafty.math.randomInt(-1,4), "id": -1 };
+		// }
+		for (var i=0; i<fieldHeight; i++) {
 			for (var j=0; j<fieldWidth; j++)
-				fieldArray[i][j] = { "color": Crafty.math.randomInt(-1,4), "id": -1 };
+				fieldArray[i][j] = { "color": Crafty.math.randomInt(0,5), "id": -1 };
 		}
 		drawField();
 
@@ -685,24 +871,39 @@ Crafty.scene("game", function () {
 			}
 		});
 		
-		Crafty.e("2D, DOM, Color")
-			.attr({x: 0+offsetLeft, y: (fieldHeight*tileHeight)+offsetTop, w: (fieldWidth*tileWidth), h: 4 })
-			.color("black");
+		// Crafty.e("2D, DOM, Color")
+			// .attr({x: 0+offsetLeft, y: (fieldHeight*tileHeight)+offsetTop, w: (fieldWidth*tileWidth), h: 4 })
+			// .color("black");
 			
 		Crafty.e("2D, DOM, Color")
-			.attr({x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.7 })
-			.color("white");
-		Crafty.e("pad");
+			.attr({x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.8 })
+			.color("black");
+		// Crafty.e("pad");
 		
-		Crafty.e("HTML, Mouse")
-			.attr({x:200, y:20, w:100, h:20})
-			.replace("<p class='menuButton' onClick='Crafty.scene(\"main\");'>play</p>")
-			// .bind("Click", function (e) {
-				// Crafty.scene("main");
-			// })
+		Crafty.e("2D, DOM, sprTitle")
+			.attr({ x:(winWidth-256)/2, y: 20 })
 		;
 		
-		var no_play = 0;
+		Crafty.e("2D, DOM, Text")
+			.attr({ x:0, y:170, w: winWidth, h:400 })
+			.css({
+				'font-size':'30px', 
+				'font-weight':'bold',
+				'text-align':'center',
+				'font-family':'PaperCut, Arial, sans-serif', 
+				'color': '#fff',
+				// '-webkit-text-stroke': '1px white',
+				// 'text-shadow': '-2px 2px 2px #fff'
+			})
+			.text("You’re Rick, an Australian miner, and you only have your mining tools left... You have to make some money mining, and be quick about it!")
+		;
+		
+		Crafty.e("HTML, Mouse")
+			.attr({x:200, y:350, w:200, h:40})
+			.replace("<p class='menuButton' onClick='Crafty.scene(\"main\");'>PLAY</p>")
+		; */
+		
+		/* var no_play = 0;
 		var tick = 1;
 		
 		Crafty.addEvent(this, window.document, "MovePad", null);
@@ -756,14 +957,14 @@ Crafty.scene("game", function () {
 			fieldArray[0][rColumn2].color = Crafty.math.randomInt(0,numberOfColors-1);
 			fieldArray[0][rColumn2].moving = 1;
 			gameLoop ();
-		}
+		} */
 	});
 
 	Crafty.scene("main", function () {
 		
 		MENU_MODE = false;
 
-		initGame(6, 12);
+		initGame(7, 12);
 		
 		Crafty.e("bgDirt");
 		
@@ -794,7 +995,7 @@ Crafty.scene("game", function () {
 								for (var i=0; i < padLoadId.length; i++)
 									Crafty(padLoadId[i]).attr({x:this.x, y:this.y-(tileHeight*(i+1)) });
 							}
-						} else if (e.key == Crafty.keys['J']) {
+						} else if (e.key == Crafty.keys['DOWN_ARROW']) {
 							// Loading the pad
 							if (!PAUSE_MODE) {
 								var col = Math.round(this.x/tileWidth);
@@ -820,7 +1021,7 @@ Crafty.scene("game", function () {
 									// console.log(padLoadId);
 								}
 							}
-						} else if (e.key == Crafty.keys['K']) {
+						} else if (e.key == Crafty.keys['UP_ARROW']) {
 							// Unloading the pad tile by tile
 							/* if (!PAUSE_MODE) {
 								var col = Math.round(this.x/tileWidth);
@@ -876,8 +1077,11 @@ Crafty.scene("game", function () {
 									}
 								}
 							}
-						} else if (e.key == Crafty.keys['S']) {
-							PAUSE_MODE = !PAUSE_MODE;
+						} else if (e.key == Crafty.keys['S'] || e.key == Crafty.keys['ESC']) {
+							if (!PAUSE_MODE) {
+								PAUSE_MODE = !PAUSE_MODE;
+								pauseScreen();
+							}
 						}
 					})
 				;
@@ -945,6 +1149,48 @@ Crafty.scene("game", function () {
 							.text(currentLevel)
 						;
 		
+		// Crafty.e("HTML, Mouse")
+			// .attr({x:400, y:200, w:180, h:30})
+			// .replace("<p class='menuButton' onClick='PAUSE_MODE = !PAUSE_MODE;'>PAUSE</p>")
+		// ;
+		// Crafty.e("2D, DOM, Color")
+			// .attr({ x: 398, y: 200 - 2, w: 184, h: 44, z:1 })
+			// .color("black")
+		// ;
+		// Crafty.e("2D, DOM, Mouse, Color")
+			// .attr({ x: 400, y: 200, w: 180, h: 40, z:2 })
+			// .color("#900")
+			// .css({'cursor': 'hand'})
+			// .bind("MouseOver", function (e) {
+				// this.color("#B00");
+			// })
+			// .bind("MouseOut", function (e) {
+				// this.color("#900");
+			// })
+			// .bind("Click", function (e) {
+				// PAUSE_MODE = !PAUSE_MODE;
+				// pauseScreen();
+			// })
+		// ;
+		// Crafty.e("2D, DOM, Text")
+			// .attr({ x:400, y:200, w: 180, h:40, z:3 })
+			// .css({
+				// 'font-size':'30px', 
+				// 'font-weight':'bold',
+				// 'text-align':'center',
+				// 'font-family':'PaperCut, Arial, sans-serif', 
+				// 'color': '#fff'
+			// })
+			// .css({'cursor': 'hand'})
+			// .text("PAUSE")
+		// ;
+		drawButton(400, 200, 180, 40, "PAUSE", function () {
+			PAUSE_MODE = !PAUSE_MODE;
+			pauseScreen();
+		}, 1);
+		drawButton(400, 250, 180, 40, "MENU", function () {
+			Crafty.scene("menu");
+		}, 1);
 		/* for (var i=0; i<fieldHeight; i++) {
 			fieldArray[i] = new Array();
 			for (var j=0; j<fieldWidth; j++)
@@ -993,11 +1239,15 @@ Crafty.scene("game", function () {
 							// level change
 							currentLevel++;
 							levelText.text(currentLevel);
-							intervalBetweenUpdates -= newLevelUpdateIntervalDecrease;
-							// intervalBetweenTiles -= newLevelTilesIntervalDecrease;
-							if (numberOfColors < maxNumberOfColors) numberOfColors++; //we add one possible color to the mix
+							if (numberOfColors < maxNumberOfColors) {
+								console.log("ajout coul");
+								numberOfColors++; //we add one possible color to the mix
+							} else {
+								console.log("plus vite");
+								intervalBetweenUpdates -= newLevelUpdateIntervalDecrease;
+							}
+							console.log(currentLevel, intervalBetweenUpdates);
 							window.clearInterval(moveTilesId);
-							// window.clearInterval(addTilesId);
 							gameLoop();
 						}
 					}
@@ -1028,4 +1278,4 @@ Crafty.scene("game", function () {
 	Crafty.scene("menu");
 });
 
-Crafty.scene("loading");
+Crafty.scene("game");

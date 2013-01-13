@@ -11,7 +11,10 @@ body {
 	background-color: #900;
 	color: white;
 	border: 2px solid black;
-	padding: 5px 20px;
+	padding: 5px 10px;
+	text-align: center;
+	font-size: 30px;
+	cursor: hand;
 }
 
 .menuButton:hover {
