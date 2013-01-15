@@ -50,12 +50,13 @@ Crafty.scene("game", function () {
 	var tileWidth = 52, tileHeight = 32;
 	Crafty.sprite("assets/tiles.png", {
 		sprTile0:[0,0,tileWidth,tileHeight],
-		sprTile1:[52,0,tileWidth,tileHeight],
+		sprTile6:[52,0,tileWidth,tileHeight],
 		sprTile2:[52*2,0,tileWidth,tileHeight],
 		sprTile3:[52*3,0,tileWidth,tileHeight],
 		sprTile4:[52*4,0,tileWidth,tileHeight],
 		sprTile5:[52*5,0,tileWidth,tileHeight],
-		sprPad:[52*6,0,tileWidth,tileHeight]
+		sprTile1:[52*6,0,tileWidth,tileHeight],
+		sprPad:[52*7,0,tileWidth,tileHeight]
 	});
 	
 	Crafty.sprite("assets/dirt.jpg", { sprDirt:[0,0,340,340] });
@@ -613,10 +614,34 @@ Crafty.scene("game", function () {
 		}
 	}
 
+	function shakeColumn (col) {
+		// shakes the column to show it's full
+		var origPosArray = new Array();
+		for (var i = 0; i < fieldHeight; i++)
+			origPosArray[i] = { 'x': col*tileWidth+offsetLeft, 'y': i*tileHeight+offsetTop };
+			
+		
+		for (var n=40; n<240; n+=20) {
+			window.setTimeout(function () {
+				for (var i = 0; i < fieldHeight; i++) {
+					Crafty(fieldArray[i][col].id).x = (origPosArray[i].x)+Crafty.math.randomInt(-5,5);
+					Crafty(fieldArray[i][col].id).y = (origPosArray[i].y)+Crafty.math.randomInt(-2,2);
+				}
+			}, n);
+		}
+		window.setTimeout(function () {
+			for (var i = 0; i < fieldHeight; i++) {
+				Crafty(fieldArray[i][col].id).x = origPosArray[i].x;
+				Crafty(fieldArray[i][col].id).y = origPosArray[i].y;
+			}
+		}, 300);
+		
+	}
+	
 	Crafty.c("tile", {
 		init: function () {},
 		tile: function (xTile, yTile, colorTile) { // colorTile is a number between 0 and maxNumberOfColors
-			var tileId = Crafty.e("2D, Canvas, Tint, Collision, sprTile"+colorTile)
+			var tileId = Crafty.e("2D, Canvas, sprTile"+colorTile)
 				.attr({ x: xTile, y: yTile, color: colorTile })
 				// .tint(colorsArray[colorTile], 0.5)
 			;
@@ -1056,6 +1081,7 @@ Crafty.scene("game", function () {
 											if (padLoadId.length === 1) Crafty(padLoadId[0]).attr({x:this.x, y:this.y-tileHeight});
 										} else {
 											console.log("Column full!");
+											shakeColumn(col);
 										}
 										// console.log(padLoadId);
 									} else {
@@ -1073,6 +1099,9 @@ Crafty.scene("game", function () {
 												this.y -= tileHeight;
 											}
 											drawField();
+										} else {
+											console.log("Column full!");
+											shakeColumn(col);
 										}
 									}
 								}
@@ -1094,13 +1123,14 @@ Crafty.scene("game", function () {
 			// .attr({x: 0+offsetLeft, y: tileHeight+offsetTop, w: (fieldWidth*tileWidth), h: 2 })
 			// .color("gray");
 			
-		Crafty.e("2D, DOM, Color")
-			.attr({x: 0+offsetLeft, y: (fieldHeight*tileHeight)+offsetTop, w: (fieldWidth*tileWidth), h: 4 })
+		Crafty.e("2D, Canvas, Color")
+			// .attr({x: 0+offsetLeft, y: (fieldHeight*tileHeight)+offsetTop, w: (fieldWidth*tileWidth), h: 4 })
+			.attr({x: 0, y: (fieldHeight*tileHeight)+offsetTop, w: (fieldWidth*tileWidth)+(offsetLeft*2), h: 150 })
 			.color("black");
 		Crafty.e("pad");
 		
 		Crafty.e("2D, DOM, Text")
-			.attr({ x:450, y:32 })
+			.attr({ x:450, y:32, z:1 })
 			.css({
 				'font-size':'30px', 
 				'font-weight':'bold', 
@@ -1112,7 +1142,7 @@ Crafty.scene("game", function () {
 			.text("Money")
 		;
 		scoreText = Crafty.e("2D, DOM, Text")
-							.attr({ x:450, y:70, w: 150 })
+							.attr({ x:450, y:70, w: 150, z:1 })
 							.css({
 								'font-size':'30px', 
 								'font-weight':'bold', 
@@ -1125,7 +1155,7 @@ Crafty.scene("game", function () {
 						;
 						
 		Crafty.e("2D, DOM, Text")
-			.attr({ x:450, y:112 })
+			.attr({ x:450, y:112, z:1 })
 			.css({
 				'font-size':'30px', 
 				'font-weight':'bold', 
@@ -1137,7 +1167,7 @@ Crafty.scene("game", function () {
 			.text("Level")
 		;
 		levelText = Crafty.e("2D, DOM, Text")
-							.attr({ x:450, y:142 })
+							.attr({ x:450, y:142, z:1 })
 							.css({
 								'font-size':'30px', 
 								'font-weight':'bold', 
@@ -1184,13 +1214,17 @@ Crafty.scene("game", function () {
 			// .css({'cursor': 'hand'})
 			// .text("PAUSE")
 		// ;
+		Crafty.e("2D, DOM, Color")
+			.attr({ x: (fieldWidth*tileWidth)+(offsetLeft*2), y: 0, w: 300, h: winHeight, z:0, alpha: 0.7 })
+			.color("grey")
+		;
 		drawButton(400, 200, 180, 40, "PAUSE", function () {
 			PAUSE_MODE = !PAUSE_MODE;
 			pauseScreen();
-		}, 1);
+		}, 2);
 		drawButton(400, 250, 180, 40, "MENU", function () {
 			Crafty.scene("menu");
-		}, 1);
+		}, 2);
 		/* for (var i=0; i<fieldHeight; i++) {
 			fieldArray[i] = new Array();
 			for (var j=0; j<fieldWidth; j++)
@@ -1246,6 +1280,28 @@ Crafty.scene("game", function () {
 								console.log("plus vite");
 								intervalBetweenUpdates -= newLevelUpdateIntervalDecrease;
 							}
+							var nbSteps = 100;
+							Crafty.e("DOM, Text")
+								.attr({x: 0, y: ((fieldHeight*tileHeight)+offsetTop)/2, w: (fieldWidth*tileWidth)+offsetLeft, h: 100})
+								.text("Level "+currentLevel)
+								.css({
+									'font-size':'70px', 
+									'font-weight':'bold', 
+									'font-family':'PaperCut, Arial, sans-serif', 
+									'color': '#f6ff0e',
+									'text-align': 'center',
+									'-webkit-text-stroke': '1px black',
+									'text-shadow': '-2px 2px 2px #000'
+								})
+								.bind("EnterFrame", function (e) {
+									if (nbSteps-- > 0) {
+										this.y -= 0.7;
+									} else {
+										this.destroy();
+									}
+								})
+							;
+
 							console.log(currentLevel, intervalBetweenUpdates);
 							window.clearInterval(moveTilesId);
 							gameLoop();
