@@ -60,6 +60,7 @@ Crafty.scene("game", function () {
 	});
 	
 	Crafty.sprite("assets/dirt.jpg", { sprDirt:[0,0,340,340] });
+	Crafty.sprite(64, "assets/asphalt.png", { sprAsphalt:[0,0] });
 	Crafty.sprite("assets/Title.png", { sprTitle:[0,0,256,128] });
 
 	var comboCounter = 0; // Counts the number of simultaneous matches we did
@@ -598,13 +599,13 @@ Crafty.scene("game", function () {
 					Crafty(fieldArray[e.x][e.y].id).alpha = 0.1;
 				}, 50);
 				window.setTimeout(function () {
-					Crafty(fieldArray[e.x][e.y].id).alpha = 0.8;
+					Crafty(fieldArray[e.x][e.y].id).alpha = 1;
 				}, 100);
 				window.setTimeout(function () {
 					Crafty(fieldArray[e.x][e.y].id).alpha = 0.1;
 				}, 150);
 				window.setTimeout(function () {
-					Crafty(fieldArray[e.x][e.y].id).alpha = 0.8;
+					Crafty(fieldArray[e.x][e.y].id).alpha = 1;
 				}, 180);
 				window.setTimeout(function () {
 					// let's not forget to clear the tile afterwards...
@@ -703,6 +704,7 @@ Crafty.scene("game", function () {
 			Crafty.load([
 					"assets/Title.png", 
 					"assets/tiles.png", 
+					"assets/asphalt.png", 
 					"assets/dirt.jpg", 
 					"assets/stone.mp3", 
 					"assets/stone.ogg", 
@@ -1123,10 +1125,16 @@ Crafty.scene("game", function () {
 			// .attr({x: 0+offsetLeft, y: tileHeight+offsetTop, w: (fieldWidth*tileWidth), h: 2 })
 			// .color("gray");
 			
-		Crafty.e("2D, Canvas, Color")
-			// .attr({x: 0+offsetLeft, y: (fieldHeight*tileHeight)+offsetTop, w: (fieldWidth*tileWidth), h: 4 })
-			.attr({x: 0, y: (fieldHeight*tileHeight)+offsetTop, w: (fieldWidth*tileWidth)+(offsetLeft*2), h: 150 })
-			.color("black");
+		var bgSize = 64;
+		for (var i=0; i<winWidth; i+=bgSize)
+			for (var j=(fieldHeight*tileHeight)+offsetTop; j<winHeight; j+=bgSize)
+				Crafty.e("2D, Canvas, sprAsphalt")
+					.attr({ x:i, y:j });
+		
+		// Crafty.e("2D, Canvas, Color")
+			// .attr({x: 0, y: (fieldHeight*tileHeight)+offsetTop, w: (fieldWidth*tileWidth)+(offsetLeft*2), h: 150 })
+			// .color("black");
+			
 		Crafty.e("pad");
 		
 		Crafty.e("2D, DOM, Text")
