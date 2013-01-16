@@ -40,7 +40,8 @@ Crafty.scene("game", function () {
 		levelText;
 	var currentScore = 0,
 		scoreText;
-	var levelCaps = [60, 150, 300, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300]; // how many points to go to next level
+	// var levelCaps = [60, 150, 300, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300]; // how many points to go to next level
+	var levelCaps = [500, 1000, 2000, 3500, 5000, 7000, 8000, 9000, 10000, 11000, 12000, 13000]; // how many points to go to next level
 	var intervalBetweenUpdates = 500; // the number of ms between each update of the scene
 	var newLevelUpdateIntervalDecrease = 50; // each level, we decrease the interval between updates by this nummber of ms
 	// var newLevelUpdateIntervalDecrease = 800; // each level, we decrease the interval between updates by this nummber of ms
@@ -59,8 +60,8 @@ Crafty.scene("game", function () {
 		sprPad:[52*7,0,tileWidth,tileHeight]
 	});
 	
-	Crafty.sprite("assets/dirt.jpg", { sprDirt:[0,0,340,340] });
-	Crafty.sprite(64, "assets/asphalt.png", { sprAsphalt:[0,0] });
+	Crafty.sprite(256, "assets/background.png", { sprBackground:[0,0] });
+	Crafty.sprite(64, "assets/soil.png", { sprSoil:[0,0] });
 	Crafty.sprite("assets/Title.png", { sprTitle:[0,0,256,128] });
 
 	var comboCounter = 0; // Counts the number of simultaneous matches we did
@@ -128,7 +129,7 @@ Crafty.scene("game", function () {
 	
 	function pauseScreen() {
 		Crafty.e("2D, DOM, Color, Mouse")
-			.attr({ x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.4, z: 5 })
+			.attr({ x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.7, z: 5 })
 			.color("black")
 			.bind("Click", function (e) {
 				PAUSE_MODE = !PAUSE_MODE;
@@ -335,9 +336,10 @@ Crafty.scene("game", function () {
 				// console.log(pos);
 				// a litte animation to show the score gained
 				var nbSteps = 50;
-				if (pos.y + (toAdd*comboCounter) > winHeight) pos.y = winHeight - (toAdd*comboCounter) - 10;
+				// if (pos.y + (toAdd*comboCounter) > winHeight) pos.y = winHeight - (toAdd*comboCounter) - 10;
 				Crafty.e("DOM, Text")
-					.attr({x: pos.x, y: pos.y})
+					// .attr({x: pos.x, y: pos.y})
+					.attr({x: Crafty("sprPad").x, y: Crafty("sprPad").y})
 					.text(toAdd*comboCounter)
 					.css({
 						'font-size':(toAdd*comboCounter)+'px', 
@@ -587,7 +589,7 @@ Crafty.scene("game", function () {
 				}
 		}
 		
-		if (matchesArray.length > 0) {
+		/* if (matchesArray.length > 0) {
 			PAUSE_MODE = true;
 			window.setTimeout(function () {
 				// we unpause in 200 milliseconds, the time for us to blink the tiles
@@ -611,6 +613,29 @@ Crafty.scene("game", function () {
 					// let's not forget to clear the tile afterwards...
 					fieldArray[e.x][e.y].color = -1;
 				}, 190);
+			});
+		} */
+		
+		if (matchesArray.length > 0) {
+			matchesArray.forEach(function (e) {
+				console.log(e.y*tileWidth, e.x*tileHeight);
+				Crafty.e("2D, Canvas, sprTile"+Crafty(fieldArray[e.x][e.y].id).color)
+					.attr({ x: e.y*tileWidth, y: e.x*tileHeight, color: Crafty(fieldArray[e.x][e.y].id).color })
+					.bind("EnterFrame", function () {
+						var speed = 7;
+						var dx = Crafty("sprPad").x - this.x;
+						var dy = Crafty("sprPad").y - this.y;
+						var n = Math.sqrt((dx*dx)+(dy*dy));
+						if (n>speed) {
+							dx *= (speed/n);
+							dy *= (speed/n);
+							this.x += dx; this.y += dy;
+						} else {
+							this.destroy();
+						}
+					})
+				;
+				fieldArray[e.x][e.y].color = -1;
 			});
 		}
 	}
@@ -642,7 +667,7 @@ Crafty.scene("game", function () {
 	Crafty.c("tile", {
 		init: function () {},
 		tile: function (xTile, yTile, colorTile) { // colorTile is a number between 0 and maxNumberOfColors
-			var tileId = Crafty.e("2D, Canvas, sprTile"+colorTile)
+			var tileId = Crafty.e("2D, Canvas, Tween, sprTile"+colorTile)
 				.attr({ x: xTile, y: yTile, color: colorTile })
 				// .tint(colorsArray[colorTile], 0.5)
 			;
@@ -650,12 +675,12 @@ Crafty.scene("game", function () {
 		}
 	});
 
-	Crafty.c("bgDirt", {
+	Crafty.c("bgBackground", {
 		init: function () {
-			var bgSize = 340;
+			var bgSize = 256;
 			for (var i=0; i<winWidth; i+=bgSize)
 				for (var j=0; j<winHeight; j+=bgSize)
-					Crafty.e("2D, Canvas, sprDirt")
+					Crafty.e("2D, Canvas, sprBackground")
 						.attr({ x:i, y:j, z:0 });
 		}
 	});
@@ -704,8 +729,8 @@ Crafty.scene("game", function () {
 			Crafty.load([
 					"assets/Title.png", 
 					"assets/tiles.png", 
-					"assets/asphalt.png", 
-					"assets/dirt.jpg", 
+					"assets/soil.png", 
+					"assets/background.png", 
 					"assets/stone.mp3", 
 					"assets/stone.ogg", 
 					"assets/stone.wav"
@@ -720,15 +745,14 @@ Crafty.scene("game", function () {
 					
 					initGame(11,15);
 					
-					Crafty.e("bgDirt");
+					Crafty.e("bgBackground");
 					
 					for (var i=0; i<fieldHeight; i++) {
 						for (var j=0; j<fieldWidth; j++)
 							fieldArray[i][j] = { "color": Crafty.math.randomInt(0,5), "id": -1 };
 					}
 					drawField();
-
-						
+					
 					Crafty.e("2D, DOM, Color")
 						.attr({x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.8 })
 						.color("black");
@@ -796,7 +820,7 @@ Crafty.scene("game", function () {
 			
 			initGame(11,15);
 			
-			Crafty.e("bgDirt");
+			Crafty.e("bgBackground");
 			
 			for (var i=0; i<fieldHeight; i++) {
 				for (var j=0; j<fieldWidth; j++)
@@ -833,7 +857,7 @@ Crafty.scene("game", function () {
 		
 		/* initGame(11,15);
 		
-		Crafty.e("bgDirt");
+		Crafty.e("bgBackground");
 		
 		// for (var i=fieldHeight-1; i>fieldHeight-8; i--) {
 			// for (var j=0; j<fieldWidth; j++)
@@ -993,7 +1017,7 @@ Crafty.scene("game", function () {
 
 		initGame(7, 12);
 		
-		Crafty.e("bgDirt");
+		Crafty.e("bgBackground");
 		
 		Crafty.audio.add("stone", [
 			"assets/stone.mp3",
@@ -1126,9 +1150,9 @@ Crafty.scene("game", function () {
 			// .color("gray");
 			
 		var bgSize = 64;
-		for (var i=0; i<winWidth; i+=bgSize)
+		for (var i=(fieldWidth*tileWidth)+(offsetLeft*2)-bgSize; i>-1*bgSize; i-=bgSize)
 			for (var j=(fieldHeight*tileHeight)+offsetTop; j<winHeight; j+=bgSize)
-				Crafty.e("2D, Canvas, sprAsphalt")
+				Crafty.e("2D, Canvas, sprSoil")
 					.attr({ x:i, y:j });
 		
 		// Crafty.e("2D, Canvas, Color")
@@ -1224,7 +1248,7 @@ Crafty.scene("game", function () {
 		// ;
 		Crafty.e("2D, DOM, Color")
 			.attr({ x: (fieldWidth*tileWidth)+(offsetLeft*2), y: 0, w: 300, h: winHeight, z:0, alpha: 0.7 })
-			.color("grey")
+			.color("black")
 		;
 		drawButton(400, 200, 180, 40, "PAUSE", function () {
 			PAUSE_MODE = !PAUSE_MODE;
