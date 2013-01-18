@@ -105,6 +105,11 @@ Crafty.scene("game", function () {
 		intervalBetweenUpdates = SET_intervalBetweenUpdates; // the number of ms between each update of the scene
 		numberOfColors = SET_numberOfColors; // the number of authorized colors
 		linesStart = SET_linesStart; // the number of lines full of minerals at the start
+		
+		winnings.forEach(function (e) {
+			e.number = 0;
+			e.earnings = 0;
+		});
 	}
 
 	function drawButton(x,y,w,h,text,action,z,textsize) {
@@ -495,8 +500,9 @@ Crafty.scene("game", function () {
 					})
 				;
 			
+				console.log("Earning color ", color);
 				winnings[color].earnings += toAdd*comboCounter;
-				winnings.forEach(function (e) {console.log(e);});
+				// winnings.forEach(function (e) {console.log(e);});
 				comboCheck(comboCounter); // we display combo if it is needed
 				// console.log("Won",toAdd,"points");
 			} else {
@@ -1195,17 +1201,16 @@ Crafty.scene("game", function () {
 		drawButton(400, 250, 180, 40, "MENU", function () {
 			Crafty.scene("menu");
 		}, 2);
-		/* for (var i=0; i<fieldHeight; i++) {
-			fieldArray[i] = new Array();
+		for (var i=fieldHeight-linesStart; i<fieldHeight; i++) {
 			for (var j=0; j<fieldWidth; j++)
-				fieldArray[i][j] = { "color": Crafty.math.randomInt(0,3), "id": -1 };
+				fieldArray[i][j] = { "color": Crafty.math.randomInt(0,numberOfColors-1), "id": -1 };
 				// fieldArray[i][j] = { "color": (j==1)?-1:1, "id": -1 };
 		}
 		drawField();
 		checkBoard();
 		blinkMatches();
 		// comboCheck();
-		console.log(comboCounter); */
+		// console.log(comboCounter);
 		
 		var no_play = 0;
 		var tick = 1;
