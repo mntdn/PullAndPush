@@ -20,3 +20,11 @@ body {
 .menuButton:hover {
 	background-color: #B00;
 }
+
+.settings {
+	font-size: 24px;
+	font-family: PaperCut, Arial, sans-serif;
+	color: #fff;
+	text-align: center;
+	text-shadow: -2px 2px 2px #000;
+}

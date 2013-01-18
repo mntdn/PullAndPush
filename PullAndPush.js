@@ -36,19 +36,33 @@ Crafty.scene("game", function () {
 
 	var moveTilesId = -1; // ID of the setInterval used for the game
 
-	var animTutoIntervalLeft, animTutoIntervalRight, animTutoIntervalDown;
+	var animTutoIntervalLeft = -1, animTutoIntervalRight = -1, animTutoIntervalDown = -1;
 
 	var currentLevel = 1,
 		levelText;
 	var currentScore = 0,
 		scoreText;
+	
+	// The original values for the difficulty setting, can be changed via the menu
+	var SET_intervalBetweenUpdates = 500,
+		SET_numberOfColors = 3,
+		SET_linesStart = 2,
+		SET_difficulty = "normal";
+	
 	// var levelCaps = [60, 150, 300, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300]; // how many points to go to next level
 	var levelCaps = [500, 1000, 2000, 3500, 5000, 7000, 8000, 9000, 10000, 11000, 12000, 13000]; // how many points to go to next level
-	var intervalBetweenUpdates = 500; // the number of ms between each update of the scene
+	var intervalBetweenUpdates = SET_intervalBetweenUpdates; // the number of ms between each update of the scene
 	var newLevelUpdateIntervalDecrease = 50; // each level, we decrease the interval between updates by this nummber of ms
 	// var newLevelUpdateIntervalDecrease = 800; // each level, we decrease the interval between updates by this nummber of ms
-	var numberOfColors = 3; // the number of authorized colors, max is maxNumberOfColors
+	var numberOfColors = SET_numberOfColors; // the number of authorized colors, max is maxNumberOfColors
 	var maxNumberOfColors = 6; // the maximum number of colors
+	var linesStart = SET_linesStart; // the number of lines full of minerals at the start
+	
+	var winnings = new Array();
+	
+	for (var i = 0; i < maxNumberOfColors; i++) {
+		winnings.push({'color':i, 'number':0, 'earnings':0});
+	}
 
 	var tileWidth = 52, tileHeight = 32;
 	Crafty.sprite("assets/tiles.png", {
@@ -88,15 +102,20 @@ Crafty.scene("game", function () {
 			fullColumns[j] = 0;
 		currentLevel = 1;
 		currentScore = 0;
-		intervalBetweenUpdates = 500; // the number of ms between each update of the scene
-		numberOfColors = 3; // the number of authorized colors
+		intervalBetweenUpdates = SET_intervalBetweenUpdates; // the number of ms between each update of the scene
+		numberOfColors = SET_numberOfColors; // the number of authorized colors
+		linesStart = SET_linesStart; // the number of lines full of minerals at the start
 	}
 
-	function drawButton(x,y,w,h,text,action,z) {
+	function drawButton(x,y,w,h,text,action,z,textsize) {
 		// x,y,w and h are the position, width and height
 		// text is the text printed in the button
 		// action is what happens when you click
 		// z is the z-index of the button
+		// textsize is the size of the text
+		
+		if (typeof textsize === 'undefined') textsize = 30;
+		
 		Crafty.e("2D, DOM, Color")
 			.attr({ x: x, y: y, w: w, h: h, z:z })
 			.color("black")
@@ -118,7 +137,7 @@ Crafty.scene("game", function () {
 		Crafty.e("2D, DOM, Text")
 			.attr({ x:x, y:y, w: w, h:h, z:z+2 })
 			.css({
-				'font-size':'30px', 
+				'font-size':textsize+'px', 
 				'font-weight':'bold',
 				'text-align':'center',
 				'font-family':'PaperCut, Arial, sans-serif', 
@@ -162,6 +181,13 @@ Crafty.scene("game", function () {
 	}
 	
 	function coolTuto() {
+		if (animTutoIntervalLeft !== -1) {
+			console.log("efface");
+			window.clearInterval(animTutoIntervalLeft);
+			window.clearInterval(animTutoIntervalRight);
+			window.clearInterval(animTutoIntervalDown);
+		}
+		
 		Crafty.e("2D, DOM, Color")
 			.attr({ x: 150, y: 300, w: 32, h: 32 })
 			.color("red")
@@ -250,13 +276,13 @@ Crafty.scene("game", function () {
 		animTutoIntervalLeft = window.setInterval(function () { 
 			Crafty.trigger("AnimTutoLeft");
 			window.setTimeout(function () {Crafty.trigger("AnimTutoClearLR"); }, 200);
-		}, 1000);
+		}, 1500);
 		window.setTimeout(function () {
 			animTutoIntervalRight = window.setInterval(function () { 
 				Crafty.trigger("AnimTutoRight"); 
 				window.setTimeout(function () {Crafty.trigger("AnimTutoClearLR"); }, 200);
-			}, 1000);
-		}, 500);
+			}, 1500);
+		}, 750);
 		
 		Crafty.trigger("AnimTutoDown");
 		window.setTimeout(function () {Crafty.trigger("AnimTutoClearDU"); }, 200);
@@ -276,6 +302,7 @@ Crafty.scene("game", function () {
 
 	function drawField() {
 		// we redraw all the tiles if they have changed
+		// New_Pos = Old_Pos + (New_Pos - Old_Pos) * (DT / (DT + Damp))
 		var line = 0, col = 0;
 		fieldArray.forEach(function (e) {
 			e.forEach(function (f) {
@@ -468,6 +495,8 @@ Crafty.scene("game", function () {
 					})
 				;
 			
+				winnings[color].earnings += toAdd*comboCounter;
+				winnings.forEach(function (e) {console.log(e);});
 				comboCheck(comboCounter); // we display combo if it is needed
 				// console.log("Won",toAdd,"points");
 			} else {
@@ -774,7 +803,6 @@ Crafty.scene("game", function () {
 		tile: function (xTile, yTile, colorTile) { // colorTile is a number between 0 and maxNumberOfColors
 			var tileId = Crafty.e("2D, Canvas, Tween, sprTile"+colorTile)
 				.attr({ x: xTile, y: yTile, color: colorTile })
-				// .tint(colorsArray[colorTile], 0.5)
 			;
 			return tileId[0];
 		}
@@ -797,11 +825,11 @@ Crafty.scene("game", function () {
 		
 		if (!LOADED) {
 			Crafty.e("2D, DOM, Color")
-				.attr({ x: 48, y: winHeight - 100 - 2, w: winWidth - 50 - 50, h: 64, z:1 })
+				.attr({ x: 248, y: winHeight - 100 - 2, w: winWidth - 250 - 50, h: 64, z:1 })
 				.color("black")
 			;
 			var progressBar = Crafty.e("2D, DOM, Mouse, Color")
-				.attr({ x: 50, y: winHeight - 100, w: 0, h: 60, z:2 })
+				.attr({ x: 250, y: winHeight - 100, w: 0, h: 60, z:2 })
 				.color("#900")
 				.css({'cursor': 'hand'})
 				.bind("MouseOver", function (e) {
@@ -815,7 +843,7 @@ Crafty.scene("game", function () {
 				})
 			;
 			var loadText = Crafty.e("2D, DOM, Text")
-				.attr({ x:0, y:winHeight - 95, w: winWidth, h:40, z:3 })
+				.attr({ x:250, y:winHeight - 95, w: winWidth-250-50, h:40, z:3 })
 				.css({
 					'font-size':'40px', 
 					'font-weight':'bold',
@@ -879,12 +907,15 @@ Crafty.scene("game", function () {
 					;
 					
 					coolTuto();
+					drawButton(50, winHeight - 102, 180, 64, "Difficulty:<br />"+SET_difficulty, function () {
+						Crafty.scene("settings");
+					}, 3, 20);
 				},
 
 				function(e) {
 					// console.log(e.loaded, e.total, e.percent ,e.src);
 					
-					progressBar.w = (e.percent * (winWidth - 50 - 50 - 4)/100);
+					progressBar.w = (e.percent * (winWidth - 250 - 50 - 4)/100);
 					loadText.text("Loading "+e.loaded+"/"+e.total);
 				},
 
@@ -895,11 +926,11 @@ Crafty.scene("game", function () {
 			);
 		} else {
 			Crafty.e("2D, DOM, Color")
-				.attr({ x: 48, y: winHeight - 100 - 2, w: winWidth - 48 - 48, h: 64, z:1 })
+				.attr({ x: 248, y: winHeight - 100 - 2, w: winWidth - 248 - 48, h: 64, z:1 })
 				.color("black")
 			;
 			var progressBar = Crafty.e("2D, DOM, Mouse, Color")
-				.attr({ x: 50, y: winHeight - 100, w: winWidth - 50 - 50, h: 60, z:2 })
+				.attr({ x: 250, y: winHeight - 100, w: winWidth - 250 - 50, h: 60, z:2 })
 				.color("#900")
 				.bind("MouseOver", function (e) {
 					this.color("#B00");
@@ -913,7 +944,7 @@ Crafty.scene("game", function () {
 				})
 			;
 			var loadText = Crafty.e("2D, DOM, Text")
-				.attr({ x:0, y:winHeight - 95, w: winWidth, h:40, z:3 })
+				.attr({ x:250, y:winHeight - 95, w: winWidth - 250 - 50, h:40, z:3 })
 				.css({
 					'font-size':'40px', 
 					'font-weight':'bold',
@@ -958,6 +989,9 @@ Crafty.scene("game", function () {
 			
 			coolTuto();
 			
+			drawButton(50, winHeight - 102, 180, 64, "Difficulty:<br />"+SET_difficulty, function () {
+				Crafty.scene("settings");
+			}, 3, 20);
 		}
 		
 	});
@@ -965,10 +999,6 @@ Crafty.scene("game", function () {
 	Crafty.scene("main", function () {
 		
 		MENU_MODE = false;
-		
-		window.clearInterval(animTutoIntervalLeft);
-		window.clearInterval(animTutoIntervalRight);
-		window.clearInterval(animTutoIntervalDown);
 
 		initGame(7, 12);
 		
@@ -1214,10 +1244,10 @@ Crafty.scene("game", function () {
 							currentLevel++;
 							levelText.text(currentLevel);
 							if (numberOfColors < maxNumberOfColors) {
-								console.log("ajout coul");
+								// console.log("ajout coul");
 								numberOfColors++; //we add one possible color to the mix
-							} else {
-								console.log("plus vite");
+							} else if (intervalBetweenUpdates > 100) {
+								// console.log("plus vite");
 								intervalBetweenUpdates -= newLevelUpdateIntervalDecrease;
 							}
 							var nbSteps = 100;
@@ -1269,6 +1299,136 @@ Crafty.scene("game", function () {
 			fieldArray[0][rColumn2].moving = 1;
 			gameLoop ();
 		}
+	});
+	
+	Crafty.scene("settings", function () {
+		Crafty.e("bgBackground");
+		Crafty.e("2D, DOM, Text")
+			.attr({ x:0, y:10, w: winWidth, z:1 })
+			.css({
+				'font-size':'30px', 
+				'font-weight':'bold', 
+				'font-family':'PaperCut, Arial, sans-serif', 
+				'color': '#fff',
+				'text-align': 'center',
+				'text-shadow': '-2px 2px 2px #000'
+			})
+			.text("Difficulty")
+		;
+		
+		drawButton(50,70,150,50,"Easy",function () {
+			SET_difficulty = "easy";
+			$( "#sliderColors" ).slider( "value", 2 );
+			$( "#colors" ).text( "Starting colors: 2" );
+			SET_numberOfColors = 2;
+			$( "#sliderSpeed" ).slider( "value", 800 );
+			$( "#speed" ).text( "Initial speed: 800" );
+			SET_intervalBetweenUpdates = 800;
+			$( "#sliderLines" ).slider( "value", 0 );
+			$( "#lines" ).text( "Starting lines: 0" );
+			SET_linesStart = 0;
+		}, 1);
+		drawButton(220,70,150,50,"Normal",function () {
+			SET_difficulty = "normal";
+			$( "#sliderColors" ).slider( "value", 3 );
+			$( "#colors" ).text( "Starting colors: 3" );
+			SET_numberOfColors = 3;
+			$( "#sliderSpeed" ).slider( "value", 500 );
+			$( "#speed" ).text( "Initial speed: 500" );
+			SET_intervalBetweenUpdates = 500;
+			$( "#sliderLines" ).slider( "value", 2 );
+			$( "#lines" ).text( "Starting lines: 2" );
+			SET_linesStart = 2
+		}, 1);
+		drawButton(390,70,150,50,"Hard",function () {
+			SET_difficulty = "hard";
+			$( "#sliderColors" ).slider( "value", 6 );
+			$( "#colors" ).text( "Starting colors: 6" );
+			SET_numberOfColors = 6;
+			$( "#sliderSpeed" ).slider( "value", 300 );
+			$( "#speed" ).text( "Initial speed: 300" );
+			SET_intervalBetweenUpdates = 300;
+			$( "#sliderLines" ).slider( "value", 5 );
+			$( "#lines" ).text( "Starting lines: 5" );
+			SET_linesStart = 5;
+		}, 1);
+		
+		Crafty.e("HTML")
+			.attr({x:20, y:150, w:300, h:20})
+			.replace('<div id="colors" class="settings"></div>');
+		
+		Crafty.e("HTML")
+			.attr({x:320, y:160, w:200, h:20})
+			.replace('<div id="sliderColors"></div>');
+		
+		$(function() {
+			$( "#sliderColors" ).slider({
+				value:3,
+				min: 2,
+				max: 6,
+				step: 1,
+				slide: function( event, ui ) {
+					$( "#colors" ).text( "Starting colors: "+ ui.value );
+					SET_numberOfColors = ui.value;
+					SET_difficulty = "custom";
+				}
+			});
+			$( "#colors" ).text( "Starting colors: "+ $( "#sliderColors" ).slider( "value" ) );
+		});
+		
+		Crafty.e("HTML")
+			.attr({x:20, y:200, w:300, h:20})
+			.replace('<div id="speed" class="settings"></div>');
+		
+		Crafty.e("HTML")
+			.attr({x:320, y:210, w:200, h:20})
+			.replace('<div id="sliderSpeed"></div>');
+		
+		$(function() {
+			$( "#sliderSpeed" ).slider({
+				value:500,
+				min: 100,
+				max: 1000,
+				step: 50,
+				slide: function( event, ui ) {
+					$( "#speed" ).text( "Initial speed: "+ ui.value );
+					SET_intervalBetweenUpdates = ui.value;
+					SET_difficulty = "custom";
+				}
+			});
+			$( "#speed" ).text( "Initial speed: "+ $( "#sliderSpeed" ).slider( "value" ) );
+		});
+		
+		Crafty.e("HTML")
+			.attr({x:20, y:250, w:300, h:20})
+			.replace('<div id="lines" class="settings"></div>');
+		
+		Crafty.e("HTML")
+			.attr({x:320, y:260, w:200, h:20})
+			.replace('<div id="sliderLines"></div>');
+		
+		$(function() {
+			$( "#sliderLines" ).slider({
+				value:0,
+				min: 0,
+				max: 9,
+				step: 1,
+				slide: function( event, ui ) {
+					$( "#lines" ).text( "Starting lines: "+ ui.value );
+					SET_linesStart = ui.value;
+					SET_difficulty = "custom";
+				}
+			});
+			$( "#lines" ).text( "Starting lines: "+ $( "#sliderLines" ).slider( "value" ) );
+		});
+		
+		drawButton(50, winHeight - 102, 180, 64, "MENU", function () {
+			Crafty.scene("menu");
+		}, 3, 40);
+		
+		drawButton(248, winHeight - 102, winWidth - 248 - 48, 64, "PLAY", function () {
+			Crafty.scene("main");
+		}, 3, 40);
 	});
 	
 	Crafty.scene("menu");
