@@ -77,9 +77,18 @@ Crafty.scene("game", function () {
 	});
 	
 	Crafty.sprite(256, "assets/background.png", { sprBackground:[0,0] });
+	Crafty.sprite("assets/Soil_Transition.png", { sprSoilTransition:[0,0,64,32] });
 	Crafty.sprite(64, "assets/soil.png", { sprSoil:[0,0] });
 	Crafty.sprite("assets/Title.png", { sprTitle:[0,0,256,128] });
 
+	// the events for the tutorial animation
+	Crafty.addEvent(this, window.document, "AnimTutoClearLR", null); // clear Left and Right
+	Crafty.addEvent(this, window.document, "AnimTutoClearDU", null); // clear Down and Up
+	Crafty.addEvent(this, window.document, "AnimTutoLeft", null);
+	Crafty.addEvent(this, window.document, "AnimTutoRight", null);
+	Crafty.addEvent(this, window.document, "AnimTutoDown", null);
+	Crafty.addEvent(this, window.document, "AnimTutoUp", null);
+	
 	var comboCounter = 0; // Counts the number of simultaneous matches we did
 	var checkXEnded = false, checkYEnded = false; // used to know if we have finished checking for matches on X and Y
 	var comboText; // will contain the entity printing the current combo
@@ -186,15 +195,9 @@ Crafty.scene("game", function () {
 	}
 	
 	function coolTuto() {
-		if (animTutoIntervalLeft !== -1) {
-			console.log("efface");
-			window.clearInterval(animTutoIntervalLeft);
-			window.clearInterval(animTutoIntervalRight);
-			window.clearInterval(animTutoIntervalDown);
-		}
 		
 		Crafty.e("2D, DOM, Color")
-			.attr({ x: 150, y: 300, w: 32, h: 32 })
+			.attr({ x: 50, y: 300, w: 32, h: 32 })
 			.color("red")
 			.bind("AnimTutoClearLR", function () {
 				if (this.color() === "darkred") this.color("red");
@@ -205,7 +208,7 @@ Crafty.scene("game", function () {
 		;
 		
 		Crafty.e("2D, DOM, Color")
-			.attr({ x: 182, y: 300, w: 32, h: 32 })
+			.attr({ x: 82, y: 300, w: 32, h: 32 })
 			.color("red")
 			.bind("AnimTutoClearLR", function () {
 				if (this.color() === "darkred") this.color("red");
@@ -216,17 +219,17 @@ Crafty.scene("game", function () {
 		;
 		
 		Crafty.e("2D, DOM, sprPad")
-			.attr({ x: 160, y: 250 })
+			.attr({ x: 60, y: 250 })
 			.bind("AnimTutoRight", function () {
-				this.x = 180;
+				this.x = 80;
 			})
 			.bind("AnimTutoLeft", function () {
-				this.x = 130;
+				this.x = 30;
 			})
 		;
 		
 		Crafty.e("2D, DOM, Color")
-			.attr({ x: 350, y: 284, w: 32, h: 32 })
+			.attr({ x: 160, y: 284, w: 32, h: 32 })
 			.color("red")
 			.bind("AnimTutoClearDU", function () {
 				if (this.color() === "darkred") this.color("red");
@@ -237,7 +240,7 @@ Crafty.scene("game", function () {
 		;
 		
 		Crafty.e("2D, DOM, Color")
-			.attr({ x: 350, y: 316, w: 32, h: 32 })
+			.attr({ x: 160, y: 316, w: 32, h: 32 })
 			.color("red")
 			.bind("AnimTutoClearDU", function () {
 				if (this.color() === "darkred") this.color("red");
@@ -250,17 +253,17 @@ Crafty.scene("game", function () {
 		var posPad = 0;
 		var t1, t2;
 		Crafty.e("2D, DOM, sprPad")
-			.attr({ x: 400, y: 250 })
+			.attr({ x: 210, y: 250 })
 			.bind("AnimTutoDown", function () {
 				this.y += 30;
 				if (posPad === 0) {
 					t1 = Crafty.e("2D, DOM, sprTile1")
-							.attr({ x: 400, y: this.y - 32});
+							.attr({ x: 210, y: this.y - 32});
 					posPad++;
 				} else {
 					t1.y += 30;
 					t2 = Crafty.e("2D, DOM, sprTile2")
-							.attr({ x: 400, y: this.y - 64});
+							.attr({ x: 210, y: this.y - 64});
 				}
 			})
 			.bind("AnimTutoUp", function () {
@@ -270,13 +273,6 @@ Crafty.scene("game", function () {
 				posPad = 0;
 			})
 		;
-		
-		Crafty.addEvent(this, window.document, "AnimTutoClearLR", null); // clear Left and Right
-		Crafty.addEvent(this, window.document, "AnimTutoClearDU", null); // clear Down and Up
-		Crafty.addEvent(this, window.document, "AnimTutoLeft", null);
-		Crafty.addEvent(this, window.document, "AnimTutoRight", null);
-		Crafty.addEvent(this, window.document, "AnimTutoDown", null);
-		Crafty.addEvent(this, window.document, "AnimTutoUp", null);
 		
 		animTutoIntervalLeft = window.setInterval(function () { 
 			Crafty.trigger("AnimTutoLeft");
@@ -303,6 +299,23 @@ Crafty.scene("game", function () {
 			window.setTimeout(function () {Crafty.trigger("AnimTutoUp"); }, 2400);
 			window.setTimeout(function () {Crafty.trigger("AnimTutoClearDU"); }, 2600);
 		}, 4000);
+		
+		for (var i=0; i<3; i++)
+			Crafty.e("2D, Canvas, sprTile3")
+				.attr({ x: 300+(i*tileWidth), y:300 });
+		
+		Crafty.e("2D, DOM, Text")
+			.attr({ x:440, y:300, w: 150, h:40, z:3 })
+			.css({
+				'font-size':'30px', 
+				'font-weight':'bold',
+				'text-align':'center',
+				'font-family':'PaperCut, Arial, sans-serif', 
+				'color': '#fff'
+			})
+			.text("= $$$")
+		;
+		
 	}
 
 	function drawField() {
@@ -354,13 +367,13 @@ Crafty.scene("game", function () {
 				// Crafty.scene("menu");
 			} else {
 				PAUSE_MODE = true;
-				Crafty.e("2D, DOM, Color, Mouse")
+				Crafty.e("2D, DOM, Color")
 					.attr({ x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.8, z:10 })
 					.color("black")
 				;
 				
 				Crafty.e("2D, DOM, Text")
-					.attr({ x:0, y:50, w: winWidth, h:400, z:11 })
+					.attr({ x:300, y:50, w: winWidth-300, h:400, z:11 })
 					.css({
 						'font-size':'30px', 
 						'font-weight':'bold',
@@ -370,8 +383,33 @@ Crafty.scene("game", function () {
 					})
 					.text("You win $"+currentScore+"!<br />But you can do better...<br />Click try again if you dare!")
 				;
+				
+				drawButton(350, 400, 200, 50, "Try again", function () {Crafty.scene("main");}, 11);
+				
+				Crafty.e("2D, DOM, Color")
+					.attr({ x: 10, y: 10, w: 280, h: 250, alpha: 0.7, z:12 })
+					.color("white")
+				;
+				
+				var yText = 20;
+				winnings.forEach(function(e) {
+					Crafty.e("2D, DOM, sprTile"+e.color)
+						.attr({ x:20, y:yText, z:13 })
+					;
+					
+					Crafty.e("2D, DOM, Text")
+						.attr({ x:80, y:yText, w: winWidth, h:40, z:13 })
+						.css({
+							'font-size':'28px', 
+							'font-weight':'bold',
+							'font-family':'PaperCut, Arial, sans-serif', 
+							'color': '#000',
+						})
+						.text(" x"+e.number+" = $"+e.earnings)
+					;
+					yText += 40;
+				});
 
-				drawButton(200, 250, 200, 50, "Try again", function () {Crafty.scene("main");}, 11);
 			}
 		}
 		// console.log(fullColumns);
@@ -460,7 +498,8 @@ Crafty.scene("game", function () {
 	}
 
 	function updateScore(toAdd, pos, color) {
-		// updates the current score by toAdd
+		// updates the current score 
+		// toAdd is the number of tiles in the match
 		// pos is an {x, y} object indicating where the score animation should take place
 		// var s = scoreText.text();
 		// for (var i = 10; i <= toAdd; i+=10) {
@@ -471,9 +510,9 @@ Crafty.scene("game", function () {
 		// }
 		if (!MENU_MODE) {
 			// we only count the score when we play
-			if (color !== 0) { 
-				// the dirt doesn't give you any score !
-				currentScore += (toAdd*comboCounter);
+			if (color !== 0) {
+				var nbPoints = toAdd*10+((toAdd>3)?(toAdd%3)*20:0)+((toAdd>4)?(toAdd%4)*30:0)+((toAdd>5)?(toAdd%5)*40:0);
+				currentScore += (nbPoints*comboCounter);
 				scoreText.text("$"+currentScore);
 				// console.log(pos);
 				// a litte animation to show the score gained
@@ -482,9 +521,9 @@ Crafty.scene("game", function () {
 				Crafty.e("DOM, Text")
 					// .attr({x: pos.x, y: pos.y})
 					.attr({x: Crafty("sprPad").x, y: Crafty("sprPad").y})
-					.text(toAdd*comboCounter)
+					.text(nbPoints*comboCounter)
 					.css({
-						'font-size':(toAdd*comboCounter)+'px', 
+						'font-size':(toAdd*10*comboCounter)+'px', 
 						'font-weight':'bold', 
 						'font-family':'PaperCut, Arial, sans-serif', 
 						'color': '#FFF',
@@ -500,13 +539,16 @@ Crafty.scene("game", function () {
 					})
 				;
 			
-				console.log("Earning color ", color);
-				winnings[color].earnings += toAdd*comboCounter;
+				// console.log("Earning color ", color);
+				winnings[color].earnings += nbPoints*comboCounter;
+				winnings[color].number += toAdd;
 				// winnings.forEach(function (e) {console.log(e);});
 				comboCheck(comboCounter); // we display combo if it is needed
 				// console.log("Won",toAdd,"points");
 			} else {
+				// the dirt doesn't give you any dollars !
 				Crafty.audio.play("stone");
+				winnings[color].number += toAdd;
 			}
 		}
 	}
@@ -603,7 +645,7 @@ Crafty.scene("game", function () {
 							} else if (amount > 2) {
 								// console.log("Trouvé horiz !", x, y, amount);
 								if (color !== 0) comboCounter++; // dirt doesn't add to the combo counter
-								updateScore(10*amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight}, color);
+								updateScore(amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight}, color);
 								// let's delete the tiles
 								for (var i=x; i > x-amount; i--)
 									fieldArray[y][i].color = -2;
@@ -635,7 +677,7 @@ Crafty.scene("game", function () {
 							if (amount > 2) {
 								// console.log("Trouvé horiz !", x, y, amount);
 								if (color !== 0) comboCounter++; // dirt doesn't add to the combo counter
-								updateScore(10*amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight}, color);
+								updateScore(amount, {x: (x-Math.ceil(amount/2)+1)*tileWidth, y: y*tileHeight}, color);
 								// let's delete the tiles
 								for (var i=x; i > x-amount; i--)
 									fieldArray[y][i].color = -2;
@@ -666,7 +708,7 @@ Crafty.scene("game", function () {
 							} else if (amount > 2) {
 								// console.log("Trouvé vert !", x, y, amount);
 								if (color !== 0) comboCounter++; // dirt doesn't add to the combo counter
-								updateScore(10*amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight }, color);
+								updateScore(amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight }, color);
 								// let's delete the tiles
 								for (var i=y; i > y-amount; i--)
 									fieldArray[i][x].color = -2;
@@ -698,7 +740,7 @@ Crafty.scene("game", function () {
 							if (amount > 2) {
 								// console.log("Trouvé vert !", x, y, amount);
 								if (color !== 0) comboCounter++; // dirt doesn't add to the combo counter
-								updateScore(10*amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight }, color);
+								updateScore(amount, {x: x*tileWidth, y: (y-Math.ceil(amount/2)+1)*tileHeight }, color);
 								// let's delete the tiles
 								for (var i=y; i > y-amount; i--)
 									fieldArray[i][x].color = -2;
@@ -829,6 +871,12 @@ Crafty.scene("game", function () {
 		
 		MENU_MODE = true;
 		
+		if (animTutoIntervalLeft !== -1) {
+			window.clearInterval(animTutoIntervalLeft);
+			window.clearInterval(animTutoIntervalRight);
+			window.clearInterval(animTutoIntervalDown);
+		}
+		
 		if (!LOADED) {
 			Crafty.e("2D, DOM, Color")
 				.attr({ x: 248, y: winHeight - 100 - 2, w: winWidth - 250 - 50, h: 64, z:1 })
@@ -869,6 +917,7 @@ Crafty.scene("game", function () {
 					"assets/Title.png", 
 					"assets/tiles.png", 
 					"assets/soil.png", 
+					"assets/Soil_Transition.png", 
 					"assets/background.png", 
 					"assets/stone.mp3", 
 					"assets/stone.ogg", 
@@ -1006,6 +1055,11 @@ Crafty.scene("game", function () {
 		
 		MENU_MODE = false;
 
+		if (animTutoIntervalLeft !== -1) {
+			window.clearInterval(animTutoIntervalLeft);
+			window.clearInterval(animTutoIntervalRight);
+			window.clearInterval(animTutoIntervalDown);
+		}
 		initGame(7, 12);
 		
 		Crafty.e("bgBackground");
@@ -1134,9 +1188,16 @@ Crafty.scene("game", function () {
 			}
 		});
 		
+		// we add the tracks on the bottom
 		var bgSize = 64;
+		// first the transition
 		for (var i=(fieldWidth*tileWidth)+(offsetLeft*2)-bgSize; i>-1*bgSize; i-=bgSize)
-			for (var j=(fieldHeight*tileHeight)+offsetTop; j<winHeight; j+=bgSize)
+				Crafty.e("2D, Canvas, sprSoilTransition")
+					.attr({ x:i, y:(fieldHeight*tileHeight)+offsetTop });
+					
+		// then the tracks
+		for (var i=(fieldWidth*tileWidth)+(offsetLeft*2)-bgSize; i>-1*bgSize; i-=bgSize)
+			for (var j=(fieldHeight*tileHeight)+offsetTop+32; j<winHeight; j+=bgSize)
 				Crafty.e("2D, Canvas, sprSoil")
 					.attr({ x:i, y:j });
 		
@@ -1201,6 +1262,8 @@ Crafty.scene("game", function () {
 		drawButton(400, 250, 180, 40, "MENU", function () {
 			Crafty.scene("menu");
 		}, 2);
+		
+		
 		for (var i=fieldHeight-linesStart; i<fieldHeight; i++) {
 			for (var j=0; j<fieldWidth; j++)
 				fieldArray[i][j] = { "color": Crafty.math.randomInt(0,numberOfColors-1), "id": -1 };
@@ -1307,6 +1370,11 @@ Crafty.scene("game", function () {
 	});
 	
 	Crafty.scene("settings", function () {
+		if (animTutoIntervalLeft !== -1) {
+			window.clearInterval(animTutoIntervalLeft);
+			window.clearInterval(animTutoIntervalRight);
+			window.clearInterval(animTutoIntervalDown);
+		}
 		Crafty.e("bgBackground");
 		Crafty.e("2D, DOM, Text")
 			.attr({ x:0, y:10, w: winWidth, z:1 })
@@ -1368,7 +1436,7 @@ Crafty.scene("game", function () {
 		
 		$(function() {
 			$( "#sliderColors" ).slider({
-				value:3,
+				value:SET_numberOfColors,
 				min: 2,
 				max: 6,
 				step: 1,
@@ -1391,7 +1459,7 @@ Crafty.scene("game", function () {
 		
 		$(function() {
 			$( "#sliderSpeed" ).slider({
-				value:500,
+				value:SET_intervalBetweenUpdates,
 				min: 100,
 				max: 1000,
 				step: 50,
@@ -1414,7 +1482,7 @@ Crafty.scene("game", function () {
 		
 		$(function() {
 			$( "#sliderLines" ).slider({
-				value:0,
+				value:SET_linesStart,
 				min: 0,
 				max: 9,
 				step: 1,
