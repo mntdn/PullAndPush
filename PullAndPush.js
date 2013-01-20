@@ -12,7 +12,7 @@ function onComplete(){
 	kongregate.stats.submit("test",360);
 }
 Crafty.init(winWidth,winHeight);
-Crafty.background('lightgrey');
+Crafty.background('white');
 
 Crafty.scene("game", function () {
 
@@ -26,6 +26,9 @@ Crafty.scene("game", function () {
 	var DEBUG_MODE = false;
 	var PAUSE_MODE = false;
 	var LOADED = false;
+	var SOUND_ON = true;
+	var MUSIC_POWER = 1; // how loud is the music
+	var MUSIC_ON = true;
 	var SCORE = true; // if true we upadte the score
 	var MENU_MODE = true; // when we display the menu, true by default
 
@@ -66,32 +69,6 @@ Crafty.scene("game", function () {
 	}
 
 	var tileWidth = 52, tileHeight = 32;
-	Crafty.sprite("assets/tiles.png", {
-		sprTile0:[0,0,tileWidth,tileHeight],
-		sprTile6:[52,0,tileWidth,tileHeight],
-		sprTile2:[52*2,0,tileWidth,tileHeight],
-		sprTile3:[52*3,0,tileWidth,tileHeight],
-		sprTile4:[52*4,0,tileWidth,tileHeight],
-		sprTile5:[52*5,0,tileWidth,tileHeight],
-		sprTile1:[52*6,0,tileWidth,tileHeight],
-		sprPad:[52*7,0,tileWidth,tileHeight]
-	});
-	
-	Crafty.sprite(32, "assets/arrows.png", {
-		sprRightOff:[0,0],
-		sprRightOn:[1,0],
-		sprLeftOff:[2,0],
-		sprLeftOn:[3,0],
-		sprUpOff:[4,0],
-		sprUpOn:[5,0],
-		sprDownOff:[6,0],
-		sprDownOn:[7,0]
-	});
-	
-	Crafty.sprite(256, "assets/background.png", { sprBackground:[0,0] });
-	Crafty.sprite("assets/Soil_Transition.png", { sprSoilTransition:[0,0,64,32] });
-	Crafty.sprite(64, "assets/soil.png", { sprSoil:[0,0] });
-	Crafty.sprite("assets/Title.png", { sprTitle:[0,0,256,128] });
 
 	// the events for the tutorial animation
 	Crafty.addEvent(this, window.document, "AnimTutoClearLR", null); // clear Left and Right
@@ -573,12 +550,12 @@ Crafty.scene("game", function () {
 				winnings[color].earnings += nbPoints*comboCounter;
 				winnings[color].number += toAdd;
 				// winnings.forEach(function (e) {console.log(e);});
-				Crafty.audio.play("dollars");
+				if (SOUND_ON) Crafty.audio.play("dollars");
 				comboCheck(comboCounter); // we display combo if it is needed
 				// console.log("Won",toAdd,"points");
 			} else {
 				// the dirt doesn't give you any dollars !
-				Crafty.audio.play("stone");
+				if (SOUND_ON) Crafty.audio.play("stone");
 				winnings[color].number += toAdd;
 			}
 		}
@@ -958,12 +935,18 @@ Crafty.scene("game", function () {
 					"assets/tiles.png", 
 					"assets/arrows.png", 
 					"assets/soil.png", 
+					"assets/music.png", 
+					"assets/music_no.png", 
+					"assets/loudspeaker.png", 
+					"assets/loudspeaker_no.png", 
 					"assets/Soil_Transition.png", 
 					"assets/background.png", 
 					"assets/dollars.mp3", 
 					"assets/dollars.ogg", 
 					"assets/stone.mp3", 
 					"assets/stone.ogg", 
+					"assets/music.mp3", 
+					"assets/music.ogg", 
 				],
 				function() {
 					//when loaded
@@ -971,6 +954,52 @@ Crafty.scene("game", function () {
 					LOADED = true;
 					// Crafty.scene("main"); //go to the menu
 					
+					Crafty.sprite("assets/tiles.png", {
+						sprTile0:[0,0,tileWidth,tileHeight],
+						sprTile6:[52,0,tileWidth,tileHeight],
+						sprTile2:[52*2,0,tileWidth,tileHeight],
+						sprTile3:[52*3,0,tileWidth,tileHeight],
+						sprTile4:[52*4,0,tileWidth,tileHeight],
+						sprTile5:[52*5,0,tileWidth,tileHeight],
+						sprTile1:[52*6,0,tileWidth,tileHeight],
+						sprPad:[52*7,0,tileWidth,tileHeight]
+					});
+					
+					Crafty.sprite(32, "assets/arrows.png", {
+						sprRightOff:[0,0],
+						sprRightOn:[1,0],
+						sprLeftOff:[2,0],
+						sprLeftOn:[3,0],
+						sprUpOff:[4,0],
+						sprUpOn:[5,0],
+						sprDownOff:[6,0],
+						sprDownOn:[7,0]
+					});
+					
+					Crafty.sprite(256, "assets/background.png", { sprBackground:[0,0] });
+					Crafty.sprite("assets/Soil_Transition.png", { sprSoilTransition:[0,0,64,32] });
+					Crafty.sprite(64, "assets/soil.png", { sprSoil:[0,0] });
+					Crafty.sprite("assets/Title.png", { sprTitle:[0,0,256,128] });
+					Crafty.sprite(32, "assets/music.png", { sprMusic:[0,0] });
+					Crafty.sprite(32, "assets/music_no.png", { sprMusicNo:[0,0] });
+					Crafty.sprite(32, "assets/loudspeaker.png", { sprLoudspeaker:[0,0] });
+					Crafty.sprite(32, "assets/loudspeaker_no.png", { sprLoudspeakerNo:[0,0] });
+					
+					Crafty.audio.add("stone", [
+						"assets/stone.mp3",
+						"assets/stone.ogg",
+						]);
+						
+					Crafty.audio.add("dollars", [
+						"assets/dollars.mp3",
+						"assets/dollars.ogg",
+						]);
+					
+					Crafty.audio.add("music", [
+						"assets/music.mp3",
+						"assets/music.ogg",
+						]);
+						
 					loadText.text("PLAY");
 					
 					initGame(11,15);
@@ -1003,10 +1032,28 @@ Crafty.scene("game", function () {
 						.text("You’re Mat, you drive a cool truck and you need money to travel... Go mining!")
 					;
 					
+					Crafty.e("2D, DOM, Mouse, sprMusic"+((MUSIC_ON === true)?"":"No"))
+						.attr({ x: winWidth-32-20, y: 20 })
+						.bind("Click", function () {
+							this.toggleComponent("sprMusic, sprMusicNo");
+							Crafty.audio.togglePause("music");
+							MUSIC_ON = !MUSIC_ON;
+						})
+					;
+					Crafty.e("2D, DOM, Mouse, sprLoudspeaker"+((SOUND_ON === true)?"":"No"))
+						.attr({ x: winWidth-32-20, y: 62 })
+						.bind("Click", function () {
+							this.toggleComponent("sprLoudspeaker, sprLoudspeakerNo");							
+							SOUND_ON = !SOUND_ON;
+						})
+					;
+					
 					coolTuto();
 					drawButton(50, winHeight - 102, 180, 64, "Difficulty:<br />"+SET_difficulty, function () {
 						Crafty.scene("settings");
 					}, 3, 20);
+					
+					Crafty.audio.play("music", -1, MUSIC_POWER);
 				},
 
 				function(e) {
@@ -1052,7 +1099,7 @@ Crafty.scene("game", function () {
 				.css({'cursor': 'hand'})
 				.text("PLAY")
 			;
-			
+			// Crafty.audio.play("music", -1);
 			initGame(11,15);
 			
 			Crafty.e("bgBackground");
@@ -1089,6 +1136,22 @@ Crafty.scene("game", function () {
 			drawButton(50, winHeight - 102, 180, 64, "Difficulty:<br />"+SET_difficulty, function () {
 				Crafty.scene("settings");
 			}, 3, 20);
+			
+			Crafty.e("2D, DOM, Mouse, sprMusic"+((MUSIC_ON === true)?"":"No"))
+				.attr({ x: winWidth-32-20, y: 20 })
+				.bind("Click", function () {
+					this.toggleComponent("sprMusic, sprMusicNo");
+					Crafty.audio.togglePause("music");
+					MUSIC_ON = !MUSIC_ON;
+				})
+			;
+			Crafty.e("2D, DOM, Mouse, sprLoudspeaker"+((SOUND_ON === true)?"":"No"))
+				.attr({ x: winWidth-32-20, y: 62 })
+				.bind("Click", function () {
+					this.toggleComponent("sprLoudspeaker, sprLoudspeakerNo");							
+					SOUND_ON = !SOUND_ON;
+				})
+			;
 		}
 		
 	});
@@ -1105,18 +1168,7 @@ Crafty.scene("game", function () {
 		}
 		initGame(7, 12);
 		
-		Crafty.e("bgBackground");
-		
-		Crafty.audio.add("stone", [
-			"assets/stone.mp3",
-			"assets/stone.ogg",
-			]);
-			
-		Crafty.audio.add("dollars", [
-			"assets/dollars.mp3",
-			"assets/dollars.ogg",
-			]);
-		
+		Crafty.e("bgBackground");		
 		
 		Crafty.c("pad", {
 			init: function () {
@@ -1310,6 +1362,21 @@ Crafty.scene("game", function () {
 			Crafty.scene("menu");
 		}, 2);
 		
+		Crafty.e("2D, DOM, Mouse, sprMusic"+((MUSIC_ON === true)?"":"No"))
+			.attr({ x: winWidth-102-20, y: 320, z:2 })
+			.bind("Click", function () {
+				this.toggleComponent("sprMusic, sprMusicNo");
+				Crafty.audio.togglePause("music");
+				MUSIC_ON = !MUSIC_ON;
+			})
+		;
+		Crafty.e("2D, DOM, Mouse, sprLoudspeaker"+((SOUND_ON === true)?"":"No"))
+			.attr({ x: winWidth-102-20, y: 362, z:2 })
+			.bind("Click", function () {
+				this.toggleComponent("sprLoudspeaker, sprLoudspeakerNo");							
+				SOUND_ON = !SOUND_ON;
+			})
+		;
 		
 		for (var i=fieldHeight-linesStart; i<fieldHeight; i++) {
 			for (var j=0; j<fieldWidth; j++)
