@@ -9,7 +9,6 @@ kongregateAPI.loadAPI(onComplete);
 function onComplete(){
 	// Set the global kongregate API object
 	kongregate = kongregateAPI.getAPI();
-	kongregate.stats.submit("test",360);
 }
 Crafty.init(winWidth,winHeight);
 Crafty.background('white');
@@ -52,7 +51,7 @@ Crafty.scene("game", function () {
 	var SET_intervalBetweenUpdates = 500,
 		SET_numberOfColors = 3,
 		SET_linesStart = 2,
-		SET_difficulty = "normal";
+		SET_difficulty = "Normal";
 	
 	// var levelCaps = [60, 150, 300, 400, 500]; // how many points to go to next level
 	var levelCaps = [500, 1000, 2000, 3500, 5000, 7000, 9000, 11000, 15000, 20000, 25000, 50000]; // how many points to go to next level
@@ -394,6 +393,9 @@ Crafty.scene("game", function () {
 						((nbMonths === 0)?1:nbMonths)+" month"+((nbMonths>1)?"s":"")+" with that!<br />But I'm sure you want to travel more...")
 				;
 				
+				// console.log(SET_difficulty, currentScore);
+				if (typeof kongregate !== 'undefined') kongregate.stats.submit(SET_difficulty, currentScore);
+				
 				drawButton(150, 350, 300, 70, "Try again", function () {Crafty.scene("main");}, 11, 40);
 				drawButton(230, 430, 140, 50, "MENU", function () {Crafty.scene("menu");}, 11);
 				
@@ -582,7 +584,6 @@ Crafty.scene("game", function () {
 			//when combo counter < 0, it means one of the checks (X or Y) ended, e check if both ended and destroy the combo text after some ms
 			if (checkXEnded === true && checkYEnded === true)
 				window.setTimeout(function () {
-					console.log("DESTROy", comboCounterLocal);
 					comboText.destroy();
 					comboText[0] = -1;
 				}, (comboCounterLocal*-500));			
@@ -1044,8 +1045,20 @@ Crafty.scene("game", function () {
 						// .attr({x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.8 })
 						// .color("black");
 					
+					Crafty.e("2D, DOM, Text")
+						.attr({ x:0, y:5, w: winWidth, h:200 })
+						.css({
+							'font-size':'20px', 
+							'font-weight':'bold',
+							'text-align':'center',
+							'font-family':'PaperCut, Arial, sans-serif', 
+							'color': '#f2b900'
+						})
+						.text("mntdn games presents")
+					;
+					
 					Crafty.e("2D, DOM, sprTitle")
-						.attr({ x:(winWidth-256)/2, y: 20 })
+						.attr({ x:(winWidth-256)/2, y: 30 })
 					;
 					
 					Crafty.e("2D, DOM, Text")
@@ -1147,8 +1160,20 @@ Crafty.scene("game", function () {
 				// .attr({x: 0, y: 0, w: winWidth, h: winHeight, alpha: 0.8 })
 				// .color("black");
 			
+			Crafty.e("2D, DOM, Text")
+				.attr({ x:0, y:5, w: winWidth, h:200 })
+				.css({
+					'font-size':'20px', 
+					'font-weight':'bold',
+					'text-align':'center',
+					'font-family':'PaperCut, Arial, sans-serif', 
+					'color': '#f2b900'
+				})
+				.text("mntdn games presents")
+			;
+					
 			Crafty.e("2D, DOM, sprTitle")
-				.attr({ x:(winWidth-256)/2, y: 20 })
+				.attr({ x:(winWidth-256)/2, y: 30 })
 			;
 			
 			Crafty.e("2D, DOM, Text")
@@ -1286,7 +1311,7 @@ Crafty.scene("game", function () {
 											this.y -= tileHeight;
 											if (padLoadId.length === 1) Crafty(padLoadId[0]).attr({x:this.x, y:this.y-tileHeight});
 										} else {
-											console.log("Column full!");
+											// console.log("Column full!");
 											shakeColumn(col);
 										}
 										// console.log(padLoadId);
@@ -1306,7 +1331,7 @@ Crafty.scene("game", function () {
 											}
 											drawField();
 										} else {
-											console.log("Column full!");
+											// console.log("Column full!");
 											shakeColumn(col);
 										}
 									}
@@ -1345,7 +1370,7 @@ Crafty.scene("game", function () {
 				'font-weight':'bold', 
 				'font-family':'PaperCut, Arial, sans-serif', 
 				'color': '#fff',
-				'text-shadow': '-2px 2px 2px #00f'
+				'text-shadow': '-2px 2px 2px #f2b900'
 			})
 			.text("Money")
 		;
@@ -1355,8 +1380,8 @@ Crafty.scene("game", function () {
 								'font-size':'30px', 
 								'font-weight':'bold', 
 								'font-family':'PaperCut, Arial, sans-serif', 
-								'color': '#190adb',
-								'text-shadow': '-2px 2px 2px #fff'
+								'color': '#f2b900',
+								// 'text-shadow': '-2px 2px 2px #fff'
 							})
 							.text("$"+currentScore)
 						;
@@ -1369,7 +1394,7 @@ Crafty.scene("game", function () {
 				'font-family':'PaperCut, Arial, sans-serif', 
 				'color': '#fff',
 				// '-webkit-text-stroke': '1px white',
-				'text-shadow': '-2px 2px 2px #00f'
+				'text-shadow': '-2px 2px 2px #f2b900'
 			})
 			.text("Level")
 		;
@@ -1379,9 +1404,9 @@ Crafty.scene("game", function () {
 								'font-size':'30px', 
 								'font-weight':'bold', 
 								'font-family':'PaperCut, Arial, sans-serif', 
-								'color': '#190adb',
+								'color': '#f2b900',
 								// '-webkit-text-stroke': '1px white',
-								'text-shadow': '-2px 2px 2px #fff'
+								// 'text-shadow': '-2px 2px 2px #fff'
 							})
 							.text(currentLevel)
 						;
@@ -1393,11 +1418,11 @@ Crafty.scene("game", function () {
 		
 		Crafty.e("2D, DOM, Color")
 			.attr({ x: 420, y: 160, w: 150, h: 20, z:1 })
-			.color("190adb")
+			.color("f2b900")
 		;
 		toNextLevelProgressBar = Crafty.e("2D, DOM, Color")
 			.attr({ x: 422, y: 162, w: 0, h: 16, z:2 })
-			.color("white")
+			.color("black")
 		;
 		
 		drawButton(400, 250, 180, 40, "PAUSE", function () {
@@ -1577,7 +1602,7 @@ Crafty.scene("game", function () {
 								})
 							;
 
-							console.log(currentLevel, intervalBetweenUpdates);
+							// console.log(currentLevel, intervalBetweenUpdates);
 							window.clearInterval(moveTilesId);
 							gameLoop();
 						}
@@ -1642,7 +1667,7 @@ Crafty.scene("game", function () {
 		;
 		
 		drawButton(50,70,150,50,"Easy",function () {
-			SET_difficulty = "easy";
+			SET_difficulty = "Easy";
 			$( "#sliderColors" ).slider( "value", 2 );
 			$( "#colors" ).text( "Starting colors: 2" );
 			SET_numberOfColors = 2;
@@ -1654,7 +1679,7 @@ Crafty.scene("game", function () {
 			SET_linesStart = 0;
 		}, 1);
 		drawButton(220,70,150,50,"Normal",function () {
-			SET_difficulty = "normal";
+			SET_difficulty = "Normal";
 			$( "#sliderColors" ).slider( "value", 3 );
 			$( "#colors" ).text( "Starting colors: 3" );
 			SET_numberOfColors = 3;
@@ -1666,7 +1691,7 @@ Crafty.scene("game", function () {
 			SET_linesStart = 2
 		}, 1);
 		drawButton(390,70,150,50,"Hard",function () {
-			SET_difficulty = "hard";
+			SET_difficulty = "Hard";
 			$( "#sliderColors" ).slider( "value", 6 );
 			$( "#colors" ).text( "Starting colors: 6" );
 			SET_numberOfColors = 6;
@@ -1695,7 +1720,7 @@ Crafty.scene("game", function () {
 				slide: function( event, ui ) {
 					$( "#colors" ).text( "Starting colors: "+ ui.value );
 					SET_numberOfColors = ui.value;
-					SET_difficulty = "custom";
+					SET_difficulty = "Custom";
 				}
 			});
 			$( "#colors" ).text( "Starting colors: "+ $( "#sliderColors" ).slider( "value" ) );
@@ -1718,7 +1743,7 @@ Crafty.scene("game", function () {
 				slide: function( event, ui ) {
 					$( "#speed" ).text( "Initial speed: "+ ui.value );
 					SET_intervalBetweenUpdates = 1000-(ui.value*100);
-					SET_difficulty = "custom";
+					SET_difficulty = "Custom";
 				}
 			});
 			$( "#speed" ).text( "Initial speed: "+ $( "#sliderSpeed" ).slider( "value" ) );
@@ -1741,7 +1766,7 @@ Crafty.scene("game", function () {
 				slide: function( event, ui ) {
 					$( "#lines" ).text( "Starting lines: "+ ui.value );
 					SET_linesStart = ui.value;
-					SET_difficulty = "custom";
+					SET_difficulty = "Custom";
 				}
 			});
 			$( "#lines" ).text( "Starting lines: "+ $( "#sliderLines" ).slider( "value" ) );
@@ -1788,6 +1813,19 @@ Crafty.scene("game", function () {
 				'text-shadow': '-2px 2px 2px #000'
 			})
 			.text("Art<br />Gaëtan Montaudouin")
+		;
+		
+		Crafty.e("2D, DOM, Text, Mouse")
+			.attr({ x:0, y:300, w: winWidth, z:1 })
+			.css({
+				'font-size':'30px', 
+				'font-weight':'bold', 
+				'font-family':'PaperCut, Arial, sans-serif', 
+				'color': '#fff',
+				'text-align': 'center',
+				'text-shadow': '-2px 2px 2px #000'
+			})
+			.text("Made with CraftyJS")
 		;
 				
 		drawButton(50, winHeight - 97, 180, 64, "MENU", function () {
