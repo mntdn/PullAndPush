@@ -1417,11 +1417,12 @@ Crafty.scene("game", function () {
 		;
 		
 		Crafty.e("2D, DOM, Color")
-			.attr({ x: 420, y: 160, w: 150, h: 20, z:1 })
+			.attr({ x: 420, y: 160, w: 150, h: 20, z:2 })
 			.color("f2b900")
+			.css({ 'background': 'none repeat scroll 0% 0% #f2b900' })
 		;
 		toNextLevelProgressBar = Crafty.e("2D, DOM, Color")
-			.attr({ x: 422, y: 162, w: 0, h: 16, z:2 })
+			.attr({ x: 422, y: 162, w: 0, h: 16, z:3 })
 			.color("black")
 		;
 		
